@@ -1,4 +1,12 @@
+import telebot
 from telebot import types
+
+# Your Telegram Bot Token
+TOKEN = '8012221612:AAGvIO2S9UtdxtK38xi_HDVG3V75zpY_q-U'
+bot = telebot.TeleBot(TOKEN)
+
+# Variables to store user input
+user_data = {}
 
 # Function to confirm the post with Yes/No buttons
 def confirm_signal(message):
