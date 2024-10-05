@@ -1,5 +1,6 @@
 import telebot
 from telebot import types
+import time
 
 # Your Telegram Bot Token
 TOKEN = '8012221612:AAGvIO2S9UtdxtK38xi_HDVG3V75zpY_q-U'
@@ -7,48 +8,61 @@ bot = telebot.TeleBot(TOKEN)
 
 # Variables to store user input
 user_data = {}
+TIMEOUT_DURATION = 60  # Timeout duration in seconds
 
 # Command to start interaction with bot
 @bot.message_handler(commands=['start'])
 def start(message):
     user_data.clear()  # Clear previous data to start fresh
     bot.send_message(message.chat.id, "Hello! Please provide the coin name.")
-    bot.register_next_step_handler(message, get_coin_name)
+    bot.register_next_step_handler(message, get_coin_name, time.time())
 
 # Function to get coin name
-def get_coin_name(message):
+def get_coin_name(message, start_time):
+    if time.time() - start_time > TIMEOUT_DURATION:
+        bot.send_message(message.chat.id, "Session timed out. Please start again using /start.")
+        return
     user_data['coin_name'] = message.text
     markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
     markup.add('short', 'long')
     bot.send_message(message.chat.id, "Please choose trade type:", reply_markup=markup)
-    bot.register_next_step_handler(message, get_trade_type)
+    bot.register_next_step_handler(message, get_trade_type, time.time())
 
 # Function to get trade type using buttons
-def get_trade_type(message):
+def get_trade_type(message, start_time):
+    if time.time() - start_time > TIMEOUT_DURATION:
+        bot.send_message(message.chat.id, "Session timed out. Please start again using /start.")
+        return
     trade_type = message.text.lower()
     if trade_type in ['short', 'long']:
         user_data['trade_type'] = trade_type
         markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
         markup.add('scalp', 'swing')
         bot.send_message(message.chat.id, "Please choose strategy:", reply_markup=markup)
-        bot.register_next_step_handler(message, get_strategy)
+        bot.register_next_step_handler(message, get_strategy, time.time())
     else:
         bot.send_message(message.chat.id, "Invalid input. Please choose 'short' or 'long'.")
-        bot.register_next_step_handler(message, get_trade_type)
+        bot.register_next_step_handler(message, get_trade_type, time.time())
 
 # Function to get strategy using buttons
-def get_strategy(message):
+def get_strategy(message, start_time):
+    if time.time() - start_time > TIMEOUT_DURATION:
+        bot.send_message(message.chat.id, "Session timed out. Please start again using /start.")
+        return
     strategy = message.text.lower()
     if strategy in ['scalp', 'swing']:
         user_data['strategy'] = strategy
         bot.send_message(message.chat.id, "Please enter the entry point (EP).")
-        bot.register_next_step_handler(message, get_entry_point)
+        bot.register_next_step_handler(message, get_entry_point, time.time())
     else:
         bot.send_message(message.chat.id, "Invalid input. Please choose 'scalp' or 'swing'.")
-        bot.register_next_step_handler(message, get_strategy)
+        bot.register_next_step_handler(message, get_strategy, time.time())
 
 # Function to get entry point and calculate TP and SL
-def get_entry_point(message):
+def get_entry_point(message, start_time):
+    if time.time() - start_time > TIMEOUT_DURATION:
+        bot.send_message(message.chat.id, "Session timed out. Please start again using /start.")
+        return
     try:
         ep = float(message.text)
         user_data['entry_point'] = ep
@@ -72,20 +86,23 @@ def get_entry_point(message):
 
         # Ask for photo from user
         bot.send_message(message.chat.id, "Please send the image you want to use for the signal.")
-        bot.register_next_step_handler(message, get_photo)
+        bot.register_next_step_handler(message, get_photo, time.time())
 
     except ValueError:
         bot.send_message(message.chat.id, "Invalid input. Please enter a valid number for entry point.")
-        bot.register_next_step_handler(message, get_entry_point)
+        bot.register_next_step_handler(message, get_entry_point, time.time())
 
 # Function to receive photo and confirm before posting
-def get_photo(message):
+def get_photo(message, start_time):
+    if time.time() - start_time > TIMEOUT_DURATION:
+        bot.send_message(message.chat.id, "Session timed out. Please start again using /start.")
+        return
     if message.content_type == 'photo':
         user_data['photo'] = message.photo[-1].file_id  # Get highest resolution photo
         confirm_signal(message)
     else:
         bot.send_message(message.chat.id, "Please send a valid photo.")
-        bot.register_next_step_handler(message, get_photo)
+        bot.register_next_step_handler(message, get_photo, time.time())
 
 # Function to confirm the post
 def confirm_signal(message):
@@ -108,10 +125,13 @@ def confirm_signal(message):
     # Ask for confirmation to post
     bot.send_message(message.chat.id, "Here is the signal, please confirm to post:\n\n" + confirm_message)
     bot.send_message(message.chat.id, "Type 'yes' to confirm or 'no' to cancel.")
-    bot.register_next_step_handler(message, confirm_post)
+    bot.register_next_step_handler(message, confirm_post, time.time())
 
 # Function to handle confirmation
-def confirm_post(message):
+def confirm_post(message, start_time):
+    if time.time() - start_time > TIMEOUT_DURATION:
+        bot.send_message(message.chat.id, "Session timed out. Please start again using /start.")
+        return
     if message.text.lower() == 'yes':
         # Send photo with caption to the channel
         bot.send_photo(chat_id='-1002261291977', photo=user_data['photo'], caption=user_data['confirm_message'])
