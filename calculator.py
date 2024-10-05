@@ -64,7 +64,7 @@ def get_entry_point(message):
             tps = [ep * 1.02, ep * 1.04, ep * 1.06, ep * 1.08, ep * 1.10, ep * 1.12]
             sl = ep * 0.94
         elif user_data['trade_type'] == 'long' and user_data['strategy'] == 'swing':
-            tps = [ep * 1.05, ep * 1.10, ep * 1.15, ep * 1.20]
+            tps = [ep * 1.05, ep * 1.10, ep * 15, ep * 1.20]
             sl = ep * 0.92
 
         user_data['tps'] = tps
@@ -92,17 +92,20 @@ def confirm_signal(message):
     # Escape special characters in the coin name, just in case
     coin_name = escape_markdown(user_data['coin_name'])
 
+    # Prepare TP and SL message
+    tps = "\n".join([f"`{tp:.10g}`" for tp in user_data['tps']])  # TPs formatted in monospace
+    sl = f"`{user_data['sl']:.10g}`"
+
     # Confirmation message with TP and SL
     confirm_message = (
         f"🪙 {coin_name}\n"
         f"{user_data['trade_type'].capitalize()}\n"
         f"{user_data['strategy'].capitalize()}\n"
         f"Lv: 20✖️\n"
-        f"💸Entry : `{user_data['entry_point']:.10g}`\n"  # Display EP in monospace
-        "⚠️3% of Future Wallet\n"
-        f"🏹TP:\n"
-        + "\n".join([f"`{tp:.10g}`" for tp in user_data['tps']]) + "\n"  # TPs formatted in monospace
-        f"❌SL: `{user_data['sl']:.10g}`\n"  # Display SL in monospace
+        f"💸Entry: `{user_data['entry_point']:.10g}`\n"  # Display EP in monospace
+        "⚠️ 3% of Future Wallet\n"
+        f"🏹 TP:\n{tps}\n"
+        f"❌ SL: {sl}\n"
         "@alpha_signalsss 🐺"
     )
 
