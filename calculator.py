@@ -89,7 +89,7 @@ def get_entry_point(message):
 # Function to handle confirmation
 def confirm_post(message):
     if message.text.lower() == 'yes':
-        bot.send_message('@your_channel_name', user_data['confirm_message'])
+        bot.send_message('@smndkasnd', user_data['confirm_message'])
         bot.send_message(message.chat.id, "Signal posted successfully!")
     else:
         bot.send_message(message.chat.id, "Posting cancelled.")
