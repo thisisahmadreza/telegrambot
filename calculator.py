@@ -112,11 +112,11 @@ def confirm_signal(message):
         f"{user_data['trade_type'].capitalize()}\n"
         f"{user_data['strategy'].capitalize()}\n"
         f"Lv: 20✖️\n"
-        f"💸Entry : ```{user_data['entry_point']:.10g}```\n"  # Display EP with monospace formatting
+        f"💸Entry : `{user_data['entry_point']:.10g}`\n"  # Display EP with monospace formatting
         "⚠️3% of Future Wallet\n"
         f"🏹TP:\n"
-        + "\n".join([f"```{tp:.10g}```".rstrip('0').rstrip('.') for tp in user_data['tps']]) + "\n"  # TPs formatted with monospace
-        f"❌SL: ```{user_data['sl']:.10g}```\n"  # Display SL with monospace formatting
+        + "\n".join([f"`{tp:.10g}`".rstrip('0').rstrip('.') for tp in user_data['tps']]) + "\n"  # TPs formatted with monospace
+        f"❌SL: `{user_data['sl']:.10g}`\n"  # Display SL with monospace formatting
         "@alpha_signalsss 🐺"
     )
 
@@ -139,7 +139,4 @@ def confirm_post(message, start_time):
     else:
         bot.send_message(message.chat.id, "Posting cancelled.")
 
-# Start the bot and indicate it is running successfully
-if __name__ == "__main__":
-    print("Bot is running successfully!")
-    bot.polling(none_stop=True)
+# Start the bot and indicate it is
