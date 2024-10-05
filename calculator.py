@@ -89,17 +89,20 @@ def get_photo(message):
 
 # Function to confirm the post
 def confirm_signal(message):
+    # Escape special characters in the coin name, just in case
+    coin_name = user_data['coin_name'].replace('_', '\\_').replace('*', '\\*').replace('`', '\\`')
+
     # Confirmation message with TP and SL
     confirm_message = (
-        f"🪙 {user_data['coin_name']}\n"
+        f"🪙 {coin_name}\n"
         f"{user_data['trade_type'].capitalize()}\n"
         f"{user_data['strategy'].capitalize()}\n"
         f"Lv: 20✖️\n"
-        f"💸Entry : ```{user_data['entry_point']:.10g}```\n"  # Display EP in monospace
+        f"💸Entry : `{user_data['entry_point']:.10g}`\n"  # Display EP in monospace
         "⚠️3% of Future Wallet\n"
         f"🏹TP:\n"
-        + "\n".join([f"```{tp:.10g}```" for tp in user_data['tps']]) + "\n"  # TPs formatted in monospace
-        f"❌SL: ```{user_data['sl']:.10g}```\n"  # Display SL in monospace
+        + "\n".join([f"`{tp:.10g}`" for tp in user_data['tps']]) + "\n"  # TPs formatted in monospace
+        f"❌SL: `{user_data['sl']:.10g}`\n"  # Display SL in monospace
         "@alpha_signalsss 🐺"
     )
 
@@ -112,7 +115,7 @@ def confirm_signal(message):
     markup.add(confirm_btn, cancel_btn)
 
     # Send confirmation message with inline keyboard
-    bot.send_message(message.chat.id, "Here is the signal. Please confirm to post:", reply_markup=markup)
+    bot.send_message(message.chat.id, "Here is the signal. Please confirm to post:", reply_markup=markup, parse_mode='Markdown')
 
 # Function to handle confirmation button clicks
 @bot.callback_query_handler(func=lambda call: call.data in ['confirm', 'cancel'])
