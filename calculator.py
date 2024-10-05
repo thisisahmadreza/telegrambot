@@ -1,4 +1,5 @@
 import telebot
+import time
 
 # Your Telegram Bot Token
 TOKEN = '8012221612:AAGvIO2S9UtdxtK38xi_HDVG3V75zpY_q-U'
@@ -90,13 +91,23 @@ def get_entry_point(message):
 
 # Function to handle confirmation
 def confirm_post(message):
-    if message.text.lower() == 'yes':
-        bot.send_message('@alsigcalbot', user_data['confirm_message'])  # Updated channel ID
-        bot.send_message(message.chat.id, "Signal posted successfully!")
-    else:
-        bot.send_message(message.chat.id, "Posting cancelled.")
+    try:
+        if message.text.lower() == 'yes':
+            bot.send_message('@alsigcalbot', user_data['confirm_message'])  # Updated channel ID
+            bot.send_message(message.chat.id, "Signal posted successfully!")
+        else:
+            bot.send_message(message.chat.id, "Posting cancelled.")
+    except Exception as e:
+        bot.send_message(message.chat.id, f"Error occurred: {str(e)}")
 
 # Start the bot and indicate it is running successfully
 if __name__ == "__main__":
     print("Bot is running successfully!")  # This message will show in the VPS terminal
-    bot.polling()
+
+    # Polling with retries and error handling
+    while True:
+        try:
+            bot.polling(none_stop=True, interval=1, timeout=20)
+        except Exception as e:
+            print(f"Bot encountered an error: {str(e)}")
+            time.sleep(5)  # Wait for 5 seconds before restarting polling
