@@ -174,33 +174,40 @@ def handle_admin_update(message):
         original_post_data = posted_messages[original_message_id]
         
         # Update TP or SL based on the admin's reply
+        updated = False
         if "tp 1" in content:
             original_post_data['tps'][0] = "✅ " + str(original_post_data['tps'][0])
+            updated = True
         elif "tp 2" in content:
             original_post_data['tps'][1] = "✅ " + str(original_post_data['tps'][1])
+            updated = True
         elif "tp 3" in content:
             original_post_data['tps'][2] = "✅ " + str(original_post_data['tps'][2])
+            updated = True
         elif "tp 4" in content:
             original_post_data['tps'][3] = "✅ " + str(original_post_data['tps'][3])
+            updated = True
         elif "stop 🛑🙏🏻" in content:
             original_post_data['sl'] = "✅ " + str(original_post_data['sl'])
+            updated = True
 
-        # Rebuild and edit the original message
-        updated_message = (
-            f"🪙 {original_post_data['coin_name']}\n"
-            f"{original_post_data['trade_type'].capitalize()}\n"
-            f"{original_post_data['strategy'].capitalize()}\n"
-            f"Lv: 20✖️\n"
-            f"💸Entry : ```{original_post_data['entry_point']:.10g}```\n"
-            "⚠️3% of Future Wallet\n"
-            f"🏹TP:\n"
-            + "\n".join([f"```{tp}```" for tp in original_post_data['tps']]) + "\n"
-            f"❌SL: ```{original_post_data['sl']}```\n"
-            "@alpha_signalsss 🐺"
-        )
-        
-        # Edit the original message
-        bot.edit_message_caption(chat_id=chat_id, message_id=original_message_id, caption=updated_message)
+        # Rebuild and edit the original message if an update occurred
+        if updated:
+            updated_message = (
+                f"🪙 {original_post_data['coin_name']}\n"
+                f"{original_post_data['trade_type'].capitalize()}\n"
+                f"{original_post_data['strategy'].capitalize()}\n"
+                f"Lv: 20✖️\n"
+                f"💸Entry : ```{original_post_data['entry_point']:.10g}```\n"
+                "⚠️3% of Future Wallet\n"
+                f"🏹TP:\n"
+                + "\n".join([f"```{tp}```" for tp in original_post_data['tps']]) + "\n"
+                f"❌SL: ```{original_post_data['sl']}```\n"
+                "@alpha_signalsss 🐺"
+            )
+            
+            # Edit the original message
+            bot.edit_message_caption(chat_id=chat_id, message_id=original_message_id, caption=updated_message)
 
     else:
         bot.send_message(chat_id, "This reply doesn't match any bot-generated post.")
