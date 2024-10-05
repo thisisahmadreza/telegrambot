@@ -42,6 +42,10 @@ def get_strategy(message):
         bot.send_message(message.chat.id, "Invalid input. Please enter 'scalp' or 'swing'.")
         bot.register_next_step_handler(message, get_strategy)
 
+# Function to format numbers with up to 10 decimal places, trimming trailing zeros
+def format_number(number):
+    return f"{number:.10g}"
+
 # Function to get entry point and calculate TP and SL
 def get_entry_point(message):
     try:
@@ -71,11 +75,11 @@ def get_entry_point(message):
             f"{user_data['trade_type'].capitalize()}\n"
             f"{user_data['strategy'].capitalize()}\n"
             f"Lv: 20✖️\n"
-            f"💸Entry : {user_data['entry_point']}\n"
+            f"💸Entry : {format_number(user_data['entry_point'])}\n"
             "⚠️3% of Future Wallet\n"
             f"🏹TP:\n"
-            + "\n".join([f"TP{i+1}: {tp:.2f}" for i, tp in enumerate(tps)]) + "\n"
-            f"❌SL: {sl:.2f}\n"
+            + "\n".join([f"TP{i+1}: {format_number(tp)}" for i, tp in enumerate(tps)]) + "\n"
+            f"❌SL: {format_number(sl)}\n"
             "@alpha_signalsss 🐺"
         )
 
