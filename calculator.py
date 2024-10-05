@@ -1,4 +1,3 @@
-lets use this code and apply next command on this one:
 import telebot
 from telebot import types
 
