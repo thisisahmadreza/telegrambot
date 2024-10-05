@@ -116,7 +116,7 @@ def confirm_signal(message):
         "⚠️3% of Future Wallet\n"
         f"🏹TP:\n"
         + "\n".join([f"```{tp:.10g}```".rstrip('0').rstrip('.') for tp in user_data['tps']]) + "\n"  # TPs formatted with monospace
-        f"❌SL: ```{user_data['sl']:.10g}```\n", parse_mode='MarkdownV2'  # Display SL with monospace formatting
+        f"❌SL: ```{user_data['sl']:.10g}```\n"  # Display SL with monospace formatting
         "@alpha_signalsss 🐺"
     )
 
