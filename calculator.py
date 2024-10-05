@@ -98,7 +98,7 @@ def confirm_signal(message):
         f"💸Entry : {user_data['entry_point']:.10f}\n"
         "⚠️3% of Future Wallet\n"
         f"🏹TP:\n"
-        + ", ".join([f"{tp:.10f}".rstrip('0').rstrip('.') for tp in user_data['tps']]) + "\n"
+        + "\n".join([f"{tp:.10f}".rstrip('0').rstrip('.') for tp in user_data['tps']]) + "\n"
         f"❌SL: {user_data['sl']:.10f}\n"
         "@alpha_signalsss 🐺"
     )
