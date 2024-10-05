@@ -1,3 +1,4 @@
+lets use this code and apply next command on this one:
 import telebot
 from telebot import types
 
@@ -95,11 +96,11 @@ def confirm_signal(message):
         f"{user_data['trade_type'].capitalize()}\n"
         f"{user_data['strategy'].capitalize()}\n"
         f"Lv: 20✖️\n"
-        f"💸Entry: `{user_data['entry_point']:.10g}`\n"  # Monospace format for copiable text
+        f"💸Entry : {user_data['entry_point']:.10g}\n"  # Display EP with maximum 10 significant figures
         "⚠️3% of Future Wallet\n"
         f"🏹TP:\n"
-        + "\n".join([f"`{tp:.10g}`".rstrip('0').rstrip('.') for tp in user_data['tps']]) + "\n"  # TPs formatted appropriately
-        f"❌SL: `{user_data['sl']:.10g}`\n"  # Display SL with maximum 10 significant figures, monospace
+        + "\n".join([f"{tp:.10g}".rstrip('0').rstrip('.') for tp in user_data['tps']]) + "\n"  # TPs formatted appropriately
+        f"❌SL: {user_data['sl']:.10g}\n"  # Display SL with maximum 10 significant figures
         "@alpha_signalsss 🐺"
     )
 
@@ -110,11 +111,11 @@ def confirm_signal(message):
     bot.send_message(message.chat.id, "Type 'yes' to confirm or 'no' to cancel.")
     bot.register_next_step_handler(message, confirm_post)
 
-# Function to handle confirmation by typing
+# Function to handle confirmation
 def confirm_post(message):
     if message.text.lower() == 'yes':
         # Send photo with caption to the channel
-        bot.send_photo(chat_id='-1002261291977', photo=user_data['photo'], caption=user_data['confirm_message'], parse_mode='Markdown')
+        bot.send_photo(chat_id='-1002261291977', photo=user_data['photo'], caption=user_data['confirm_message'])
         bot.send_message(message.chat.id, "Signal posted successfully!")
     else:
         bot.send_message(message.chat.id, "Posting cancelled.")
