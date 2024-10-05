@@ -64,7 +64,7 @@ def get_entry_point(message):
             tps = [ep * 1.02, ep * 1.04, ep * 1.06, ep * 1.08, ep * 1.10, ep * 1.12]
             sl = ep * 0.94
         elif user_data['trade_type'] == 'long' and user_data['strategy'] == 'swing':
-            tps = [ep * 1.05, ep * 1.10, ep * 15, ep * 1.20]
+            tps = [ep * 1.05, ep * 1.10, ep * 1.15, ep * 1.20]
             sl = ep * 0.92
 
         user_data['tps'] = tps
@@ -118,19 +118,19 @@ def confirm_signal(message):
     markup.add(confirm_btn, cancel_btn)
 
     # Send confirmation message with inline keyboard
-    bot.send_message(message.chat.id, "Here is the signal. Please confirm to post:", reply_markup=markup, parse_mode='Markdown')
+    bot.send_message(message.chat.id, "Here is the signal. Please confirm to post:", reply_markup=markup, parse_mode='MarkdownV2')
 
 # Function to handle confirmation button clicks
 @bot.callback_query_handler(func=lambda call: call.data in ['confirm', 'cancel'])
 def handle_confirmation(call):
     if call.data == 'confirm':
         # Send photo with caption to the channel
-        bot.send_photo(chat_id='-1002261291977', photo=user_data['photo'], caption=user_data['confirm_message'], parse_mode='Markdown')
+        bot.send_photo(chat_id='-1002261291977', photo=user_data['photo'], caption=user_data['confirm_message'], parse_mode='MarkdownV2')
         bot.send_message(call.message.chat.id, "Signal posted successfully!")
     else:
         bot.send_message(call.message.chat.id, "Posting cancelled.")
 
-# Escape special characters for Markdown
+# Escape special characters for MarkdownV2
 def escape_markdown(text):
     escape_chars = ['_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!']
     for char in escape_chars:
