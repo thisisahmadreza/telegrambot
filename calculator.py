@@ -139,4 +139,7 @@ def confirm_post(message, start_time):
     else:
         bot.send_message(message.chat.id, "Posting cancelled.")
 
-# Start the bot and indicate it is
+# Start the bot and indicate it is running successfully
+if __name__ == "__main__":
+    print("Bot is running successfully!")
+    bot.polling(none_stop=True)
