@@ -19,7 +19,8 @@ TIMEOUT_DURATION = 60  # Timeout duration in seconds
 def start(message):
     # Clear previous data and stop ongoing processes
     user_data.clear()
-    bot.clear_step_handler_by_chat_id(chat_id=message.chat.id)
+    bot.clear_step_handler_by_chat_id(chat_id=message.chat.id)  # Clears any step handlers
+    bot.send_message(message.chat.id, "Previous session canceled. Starting fresh.")
     bot.send_message(message.chat.id, "Hello! Please provide the coin name.")
     bot.register_next_step_handler(message, get_coin_name, time.time())
 
