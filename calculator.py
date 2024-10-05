@@ -14,6 +14,7 @@ bot = telebot.TeleBot(TOKEN)
 user_data = {}
 TIMEOUT_DURATION = 60  # Timeout duration in seconds
 active_sessions = {}  # Track active sessions by user ID
+posted_messages = {}  # To store original posts made by the bot for editing later
 
 # Command to start interaction with bot
 @bot.message_handler(commands=['start'])
@@ -152,7 +153,7 @@ def confirm_signal(message):
         f"💸Entry : ```{user_data[chat_id]['entry_point']:.10g}```\n"  # Display EP with maximum 10 significant figures
         "⚠️3% of Future Wallet\n"
         f"🏹TP:\n"
-        + "\n".join([f"```{tp:.10g}```".rstrip('0').rstrip('.') for tp in user_data[chat_id]['tps']]) + "\n"  # TPs formatted appropriately
+        + "\n".join([f"```{tp:.10g}```" for tp in user_data[chat_id]['tps']]) + "\n"  # TPs formatted appropriately
         f"❌SL: ```{user_data[chat_id]['sl']:.10g}```\n"  # Display SL with maximum 10 significant figures
         "@alpha_signalsss 🐺"
     )
@@ -174,12 +175,55 @@ def handle_confirmation(call):
     chat_id = call.message.chat.id
     if call.data == 'confirm_yes':
         # Send photo with caption to the channel
-        bot.send_photo(chat_id='-1002261291977', photo=user_data[chat_id]['photo'], caption=user_data[chat_id]['confirm_message'])
+        sent_message = bot.send_photo(chat_id='-1002261291977', photo=user_data[chat_id]['photo'], caption=user_data[chat_id]['confirm_message'])
+        posted_messages[sent_message.message_id] = {
+            'tps': user_data[chat_id]['tps'],
+            'sl': user_data[chat_id]['sl']
+        }
         bot.send_message(chat_id, "Signal posted successfully!")
     else:
         bot.send_message(chat_id, "Posting cancelled.")
         user_data.pop(chat_id, None)
         active_sessions.pop(chat_id, None)
+
+# Listen for replies from admins in the channel to update TP/SL
+@bot.message_handler(func=lambda message: message.reply_to_message and message.chat.id == -1002261291977)
+def handle_admin_update(message):
+    original_message_id = message.reply_to_message.message_id
+    chat_id = message.chat.id
+
+    if original_message_id in posted_messages:
+        content = message.text.lower()
+        original_post_data = posted_messages[original_message_id]
+        
+        # Update TP or SL based on the admin's reply
+        if "tp 1" in content:
+            original_post_data['tps'][0] = "✅ " + str(original_post_data['tps'][0])
+        elif "tp 2" in content:
+            original_post_data['tps'][1] = "✅ " + str(original_post_data['tps'][1])
+        elif "tp 3" in content:
+            original_post_data['tps'][2] = "✅ " + str(original_post_data['tps'][2])
+        elif "tp 4" in content:
+            original_post_data['tps'][3] = "✅ " + str(original_post_data['tps'][3])
+        elif "stop 🛑🙏🏻" in content:
+            original_post_data['sl'] = "✅ " + str(original_post_data['sl'])
+
+        # Rebuild and edit the original message
+        updated_message = (
+            f"🪙 Coin\n"
+            f"Type\n"
+            f"Strategy\n"
+            f"Lv: 20✖️\n"
+            f"💸Entry : ```Entry_Point```\n"
+            "⚠️3% of Future Wallet\n"
+            f"🏹TP:\n"
+            + "\n".join([f"```{tp}```" for tp in original_post_data['tps']]) + "\n"
+            f"❌SL: ```{original_post_data['sl']}```\n"
+            "@alpha_signalsss 🐺"
+        )
+        
+        # Edit the original message
+        bot.edit_message_caption(chat_id=chat_id, message_id=original_message_id, caption=updated_message)
 
 # Start the bot and indicate it is running successfully
 if __name__ == "__main__":
