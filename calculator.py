@@ -68,7 +68,7 @@ def get_entry_point(message):
         if user_data['trade_type'] == 'short' and user_data['strategy'] == 'scalp':
             tps = [ep * 0.98, ep * 0.96, ep * 0.94, ep * 0.92, ep * 0.90, ep * 0.88]
             sl = ep * 1.06
-        elif user_data['trade_type'] == 'short' and user_data['strategy'] == 'swing']:
+        elif user_data['trade_type'] == 'short' and user_data['strategy'] == 'swing':
             tps = [ep * 0.95, ep * 0.90, ep * 0.85, ep * 0.80]
             sl = ep * 1.08
         elif user_data['trade_type'] == 'long' and user_data['strategy'] == 'scalp':
