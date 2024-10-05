@@ -106,20 +106,18 @@ def confirm_signal(message):
     user_data['confirm_message'] = confirm_message
 
     # Ask for confirmation to post
-    markup = types.InlineKeyboardMarkup()
-    markup.add(types.InlineKeyboardButton(text='Confirm', callback_data='confirm'),
-               types.InlineKeyboardButton(text='Cancel', callback_data='cancel'))
-    bot.send_message(message.chat.id, "Here is the signal, please confirm to post:", reply_markup=markup)
+    bot.send_message(message.chat.id, "Here is the signal, please confirm to post:\n\n" + confirm_message)
+    bot.send_message(message.chat.id, "Type 'yes' to confirm or 'no' to cancel.")
+    bot.register_next_step_handler(message, confirm_post)
 
-# Function to handle confirmation
-@bot.callback_query_handler(func=lambda call: call.data in ['confirm', 'cancel'])
-def handle_confirmation(call):
-    if call.data == 'confirm':
+# Function to handle confirmation by typing
+def confirm_post(message):
+    if message.text.lower() == 'yes':
         # Send photo with caption to the channel
         bot.send_photo(chat_id='-1002261291977', photo=user_data['photo'], caption=user_data['confirm_message'], parse_mode='Markdown')
-        bot.send_message(call.message.chat.id, "Signal posted successfully!")
+        bot.send_message(message.chat.id, "Signal posted successfully!")
     else:
-        bot.send_message(call.message.chat.id, "Posting cancelled.")
+        bot.send_message(message.chat.id, "Posting cancelled.")
 
 # Start the bot and indicate it is running successfully
 if __name__ == "__main__":
