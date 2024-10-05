@@ -95,11 +95,11 @@ def confirm_signal(message):
         f"{user_data['trade_type'].capitalize()}\n"
         f"{user_data['strategy'].capitalize()}\n"
         f"Lv: 20✖️\n"
-        f"💸Entry : {user_data['entry_point']:.10f}\n"
+        f"💸Entry : {user_data['entry_point']:.10g}\n"  # Display EP with maximum 10 significant figures
         "⚠️3% of Future Wallet\n"
         f"🏹TP:\n"
-        + "\n".join([f"{tp:.10f}".rstrip('0').rstrip('.') for tp in user_data['tps']]) + "\n"
-        f"❌SL: {user_data['sl']:.10f}\n"
+        + "\n".join([f"{tp:.10g}".rstrip('0').rstrip('.') for tp in user_data['tps']]) + "\n"  # TPs formatted appropriately
+        f"❌SL: {user_data['sl']:.10g}\n"  # Display SL with maximum 10 significant figures
         "@alpha_signalsss 🐺"
     )
 
