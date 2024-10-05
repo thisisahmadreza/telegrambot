@@ -89,53 +89,35 @@ def get_photo(message):
 
 # Function to confirm the post
 def confirm_signal(message):
-    # Escape special characters in the coin name, just in case
-    coin_name = escape_markdown(user_data['coin_name'])
-
-    # Prepare TP and SL message
-    tps = "\n".join([f"`{tp:.10g}`" for tp in user_data['tps']])  # TPs formatted in monospace
-    sl = f"`{user_data['sl']:.10g}`"
-
     # Confirmation message with TP and SL
     confirm_message = (
-        f"🪙 {coin_name}\n"
+        f"🪙 {user_data['coin_name']}\n"
         f"{user_data['trade_type'].capitalize()}\n"
         f"{user_data['strategy'].capitalize()}\n"
         f"Lv: 20✖️\n"
-        f"💸Entry: `{user_data['entry_point']:.10g}`\n"  # Display EP in monospace
-        "⚠️ 3% of Future Wallet\n"
-        f"🏹 TP:\n{tps}\n"
-        f"❌ SL: {sl}\n"
+        f"💸Entry : {user_data['entry_point']:.10g}\n"  # Display EP with maximum 10 significant figures
+        "⚠️3% of Future Wallet\n"
+        f"🏹TP:\n"
+        + "\n".join([f"{tp:.10g}".rstrip('0').rstrip('.') for tp in user_data['tps']]) + "\n"  # TPs formatted appropriately
+        f"❌SL: {user_data['sl']:.10g}\n"  # Display SL with maximum 10 significant figures
         "@alpha_signalsss 🐺"
     )
 
     user_data['confirm_message'] = confirm_message
 
-    # Inline keyboard for confirmation
-    markup = types.InlineKeyboardMarkup()
-    confirm_btn = types.InlineKeyboardButton('✅ Confirm', callback_data='confirm')
-    cancel_btn = types.InlineKeyboardButton('❌ Cancel', callback_data='cancel')
-    markup.add(confirm_btn, cancel_btn)
+    # Ask for confirmation to post
+    bot.send_message(message.chat.id, "Here is the signal, please confirm to post:\n\n" + confirm_message)
+    bot.send_message(message.chat.id, "Type 'yes' to confirm or 'no' to cancel.")
+    bot.register_next_step_handler(message, confirm_post)
 
-    # Send confirmation message with inline keyboard
-    bot.send_message(message.chat.id, "Here is the signal. Please confirm to post:", reply_markup=markup, parse_mode='MarkdownV2')
-
-# Function to handle confirmation button clicks
-@bot.callback_query_handler(func=lambda call: call.data in ['confirm', 'cancel'])
-def handle_confirmation(call):
-    if call.data == 'confirm':
+# Function to handle confirmation
+def confirm_post(message):
+    if message.text.lower() == 'yes':
         # Send photo with caption to the channel
-        bot.send_photo(chat_id='-1002261291977', photo=user_data['photo'], caption=user_data['confirm_message'], parse_mode='MarkdownV2')
-        bot.send_message(call.message.chat.id, "Signal posted successfully!")
+        bot.send_photo(chat_id='-1002261291977', photo=user_data['photo'], caption=user_data['confirm_message'])
+        bot.send_message(message.chat.id, "Signal posted successfully!")
     else:
-        bot.send_message(call.message.chat.id, "Posting cancelled.")
-
-# Escape special characters for MarkdownV2
-def escape_markdown(text):
-    escape_chars = ['_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!']
-    for char in escape_chars:
-        text = text.replace(char, f'\\{char}')
-    return text
+        bot.send_message(message.chat.id, "Posting cancelled.")
 
 # Start the bot and indicate it is running successfully
 if __name__ == "__main__":
