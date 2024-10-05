@@ -124,7 +124,7 @@ def confirm_signal(message):
 
     # Ask for confirmation to post
     bot.send_message(message.chat.id, "Here is the signal, please confirm to post:\n\n" + confirm_message)
-    bot.send_message(message.chat.id, "Type 'yes' to confirm or 'no' to cancel.")
+    bot.send_message(message.chat.id, "Type 'y' to confirm or 'n' to cancel.")
     bot.register_next_step_handler(message, confirm_post, time.time())
 
 # Function to handle confirmation
@@ -132,7 +132,7 @@ def confirm_post(message, start_time):
     if time.time() - start_time > TIMEOUT_DURATION:
         bot.send_message(message.chat.id, "Session timed out. Please start again using /start.")
         return
-    if message.text.lower() == 'yes':
+    if message.text.lower() == 'y':
         # Send photo with caption to the channel
         bot.send_photo(chat_id='-1002261291977', photo=user_data['photo'], caption=user_data['confirm_message'])
         bot.send_message(message.chat.id, "Signal posted successfully!")
