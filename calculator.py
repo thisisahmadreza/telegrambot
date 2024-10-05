@@ -90,7 +90,7 @@ def get_photo(message):
 # Function to confirm the post
 def confirm_signal(message):
     # Escape special characters in the coin name, just in case
-    coin_name = user_data['coin_name'].replace('_', '\\_').replace('*', '\\*').replace('`', '\\`')
+    coin_name = escape_markdown(user_data['coin_name'])
 
     # Confirmation message with TP and SL
     confirm_message = (
@@ -126,6 +126,13 @@ def handle_confirmation(call):
         bot.send_message(call.message.chat.id, "Signal posted successfully!")
     else:
         bot.send_message(call.message.chat.id, "Posting cancelled.")
+
+# Escape special characters for Markdown
+def escape_markdown(text):
+    escape_chars = ['_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!']
+    for char in escape_chars:
+        text = text.replace(char, f'\\{char}')
+    return text
 
 # Start the bot and indicate it is running successfully
 if __name__ == "__main__":
