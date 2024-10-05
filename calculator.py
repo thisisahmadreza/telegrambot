@@ -1,113 +1,100 @@
-from telegram import Update, ForceReply
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ConversationHandler
+import telebot
 
-# Define states for the conversation
-COIN, ENTRY_POINT, TRADE_TYPE, STRATEGY = range(4)
+# Your Telegram Bot Token
+TOKEN = '8012221612:AAGvIO2S9UtdxtK38xi_HDVG3V75zpY_q-U'
+bot = telebot.TeleBot(TOKEN)
 
-# Start command handler
-async def start(update: Update, context) -> int:
-    await update.message.reply_text(
-        "Welcome to the Alpha Signal Calculator! Please enter the Coin Name:"
-    )
-    return COIN
+# Variables to store user input
+user_data = {}
 
-# Handle coin input
-async def coin(update: Update, context) -> int:
-    user_data = context.user_data
-    user_data['coin'] = update.message.text
-    await update.message.reply_text(
-        "Please enter the Entry Point (EP):"
-    )
-    return ENTRY_POINT
+# Command to start interaction with bot
+@bot.message_handler(commands=['start'])
+def start(message):
+    bot.send_message(message.chat.id, "Hello! Please provide the coin name.")
+    bot.register_next_step_handler(message, get_coin_name)
 
-# Handle entry point input
-async def entry_point(update: Update, context) -> int:
-    user_data = context.user_data
-    user_data['entry_point'] = float(update.message.text)
-    await update.message.reply_text(
-        "Please choose the Trade Type:\n"
-        "1. SHORT\n"
-        "2. LONG"
-    )
-    return TRADE_TYPE
+# Function to get coin name
+def get_coin_name(message):
+    user_data['coin_name'] = message.text
+    bot.send_message(message.chat.id, "Please enter trade type (short or long).")
+    bot.register_next_step_handler(message, get_trade_type)
 
-# Handle trade type input
-async def trade_type(update: Update, context) -> int:
-    user_data = context.user_data
-    user_data['trade_type'] = update.message.text
-    await update.message.reply_text(
-        "Please choose the Strategy:\n"
-        "1. SCALP\n"
-        "2. SWING"
-    )
-    return STRATEGY
+# Function to get trade type
+def get_trade_type(message):
+    trade_type = message.text.lower()
+    if trade_type in ['short', 'long']:
+        user_data['trade_type'] = trade_type
+        bot.send_message(message.chat.id, "Please enter strategy (scalp or swing).")
+        bot.register_next_step_handler(message, get_strategy)
+    else:
+        bot.send_message(message.chat.id, "Invalid input. Please enter 'short' or 'long'.")
+        bot.register_next_step_handler(message, get_trade_type)
 
-# Handle strategy input and calculate results
-async def strategy(update: Update, context) -> int:
-    user_data = context.user_data
-    user_data['strategy'] = update.message.text
-    
-    # Perform calculations
-    result = calculate_signal(user_data)
-    
-    await update.message.reply_text(result)
-    return ConversationHandler.END
+# Function to get strategy
+def get_strategy(message):
+    strategy = message.text.lower()
+    if strategy in ['scalp', 'swing']:
+        user_data['strategy'] = strategy
+        bot.send_message(message.chat.id, "Please enter the entry point (EP).")
+        bot.register_next_step_handler(message, get_entry_point)
+    else:
+        bot.send_message(message.chat.id, "Invalid input. Please enter 'scalp' or 'swing'.")
+        bot.register_next_step_handler(message, get_strategy)
 
-def calculate_signal(data):
-    coin_name = data['coin']
-    entry_point = data['entry_point']
-    trade_type = data['trade_type']
-    strategy = data['strategy']
-    
-    result = f"🪙{coin_name}\n{trade_type}\n{strategy}\nLv: 20✖️\n💸Entry: {entry_point:.2f}\n⚠️3% of Future Wallet\n🏹TP:\n"
+# Function to get entry point and calculate TP and SL
+def get_entry_point(message):
+    try:
+        ep = float(message.text)
+        user_data['entry_point'] = ep
 
-    # Add calculations based on trade type and strategy
-    if trade_type == "SHORT":
-        if strategy == "SCALP":
-            for i in range(6):
-                result += f"{entry_point * (1 - (0.02 * (i + 1))):.2f}\n"
-            result += f"❌SL: = {entry_point * 1.06:.2f}\n"
-        elif strategy == "SWING":
-            for i in range(4):
-                result += f"{entry_point * (1 - (0.05 * (i + 1))):.2f}\n"
-            result += f"❌SL: = {entry_point * 1.08:.2f}\n"
+        # Calculation logic based on trade type and strategy
+        if user_data['trade_type'] == 'short' and user_data['strategy'] == 'scalp':
+            tps = [ep * 0.98, ep * 0.96, ep * 0.94, ep * 0.92, ep * 0.90, ep * 0.88]
+            sl = ep * 1.06
+        elif user_data['trade_type'] == 'short' and user_data['strategy'] == 'swing':
+            tps = [ep * 0.95, ep * 0.90, ep * 0.85, ep * 0.80]
+            sl = ep * 1.08
+        elif user_data['trade_type'] == 'long' and user_data['strategy'] == 'scalp':
+            tps = [ep * 1.02, ep * 1.04, ep * 1.06, ep * 1.08, ep * 1.10, ep * 1.12]
+            sl = ep * 0.94
+        elif user_data['trade_type'] == 'long' and user_data['strategy'] == 'swing':
+            tps = [ep * 1.05, ep * 1.10, ep * 1.15, ep * 1.20]
+            sl = ep * 0.92
 
-    elif trade_type == "LONG":
-        if strategy == "SCALP":
-            for i in range(6):
-                result += f"{entry_point * (1 + (0.02 * (i + 1))):.2f}\n"
-            result += f"❌SL: = {entry_point * 0.94:.2f}\n"
-        elif strategy == "SWING":
-            for i in range(4):
-                result += f"{entry_point * (1 + (0.05 * (i + 1))):.2f}\n"
-            result += f"❌SL: = {entry_point * 0.92:.2f}\n"
-    
-    result += "\n@alpha_signalsss 🐺"
-    return result
+        user_data['tps'] = tps
+        user_data['sl'] = sl
 
-# End the conversation
-async def cancel(update: Update, context) -> int:
-    await update.message.reply_text("Operation canceled.")
-    return ConversationHandler.END
+        # Confirmation before posting
+        confirm_message = (
+            f"🪙 {user_data['coin_name']}\n"
+            f"{user_data['trade_type'].capitalize()}\n"
+            f"{user_data['strategy'].capitalize()}\n"
+            f"Lv: 20✖️\n"
+            f"💸Entry : {user_data['entry_point']}\n"
+            "⚠️3% of Future Wallet\n"
+            f"🏹TP:\n"
+            + "\n".join([f"TP{i+1}: {tp:.2f}" for i, tp in enumerate(tps)]) + "\n"
+            f"❌SL: {sl:.2f}\n"
+            "@alpha_signalsss 🐺"
+        )
 
-def main():
-    # Replace 'YOUR_TOKEN_HERE' with your actual bot token
-    application = Application.builder().token("8012221612:AAHd58-95oNM5Tz05uJbEHNMyFgOPjWpyYM").build()
+        bot.send_message(message.chat.id, "Here is the signal, please confirm to post:\n\n" + confirm_message)
+        bot.send_message(message.chat.id, "Type 'yes' to confirm or 'no' to cancel.")
+        bot.register_next_step_handler(message, confirm_post)
 
-    conv_handler = ConversationHandler(
-        entry_points=[CommandHandler('start', start)],
-        states={
-            COIN: [MessageHandler(filters.TEXT & ~filters.COMMAND, coin)],
-            ENTRY_POINT: [MessageHandler(filters.TEXT & ~filters.COMMAND, entry_point)],
-            TRADE_TYPE: [MessageHandler(filters.TEXT & ~filters.COMMAND, trade_type)],
-            STRATEGY: [MessageHandler(filters.TEXT & ~filters.COMMAND, strategy)],
-        },
-        fallbacks=[CommandHandler('cancel', cancel)],
-    )
+    except ValueError:
+        bot.send_message(message.chat.id, "Invalid input. Please enter a valid number for entry point.")
+        bot.register_next_step_handler(message, get_entry_point)
 
-    application.add_handler(conv_handler)
+# Function to handle confirmation
+def confirm_post(message):
+    if message.text.lower() == 'yes':
+        bot.send_message('@your_channel_name', user_data['confirm_message'])
+        bot.send_message(message.chat.id, "Signal posted successfully!")
+    else:
+        bot.send_message(message.chat.id, "Posting cancelled.")
 
-    application.run_polling()
-
-if __name__ == '__main__':
-    main()
+# Start the bot and indicate it is running successfully
+if __name__ == "__main__":
+    print("Bot is running successfully!")  # This message will show in the VPS terminal
+    bot.polling()
