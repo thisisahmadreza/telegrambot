@@ -1,10 +1,6 @@
 import telebot
 from telebot import types
 import time
-import logging
-
-# Set up logging
-logging.basicConfig(level=logging.INFO)
 
 # Your Telegram Bot Token
 TOKEN = '8012221612:AAGvIO2S9UtdxtK38xi_HDVG3V75zpY_q-U'
@@ -25,7 +21,6 @@ def start(message):
 def get_coin_name(message, start_time):
     if time.time() - start_time > TIMEOUT_DURATION:
         bot.send_message(message.chat.id, "Session timed out. Please start again using /start.")
-        user_data.clear()  # Clear user data on timeout
         return
     user_data['coin_name'] = message.text
     markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
@@ -37,7 +32,6 @@ def get_coin_name(message, start_time):
 def get_trade_type(message, start_time):
     if time.time() - start_time > TIMEOUT_DURATION:
         bot.send_message(message.chat.id, "Session timed out. Please start again using /start.")
-        user_data.clear()  # Clear user data on timeout
         return
     trade_type = message.text.lower()
     if trade_type in ['short', 'long']:
@@ -54,7 +48,6 @@ def get_trade_type(message, start_time):
 def get_strategy(message, start_time):
     if time.time() - start_time > TIMEOUT_DURATION:
         bot.send_message(message.chat.id, "Session timed out. Please start again using /start.")
-        user_data.clear()  # Clear user data on timeout
         return
     strategy = message.text.lower()
     if strategy in ['scalp', 'swing']:
@@ -69,7 +62,6 @@ def get_strategy(message, start_time):
 def get_entry_point(message, start_time):
     if time.time() - start_time > TIMEOUT_DURATION:
         bot.send_message(message.chat.id, "Session timed out. Please start again using /start.")
-        user_data.clear()  # Clear user data on timeout
         return
     try:
         ep = float(message.text)
@@ -104,7 +96,6 @@ def get_entry_point(message, start_time):
 def get_photo(message, start_time):
     if time.time() - start_time > TIMEOUT_DURATION:
         bot.send_message(message.chat.id, "Session timed out. Please start again using /start.")
-        user_data.clear()  # Clear user data on timeout
         return
     if message.content_type == 'photo':
         user_data['photo'] = message.photo[-1].file_id  # Get highest resolution photo
@@ -121,34 +112,32 @@ def confirm_signal(message):
         f"{user_data['trade_type'].capitalize()}\n"
         f"{user_data['strategy'].capitalize()}\n"
         f"Lv: 20✖️\n"
-        f"💸Entry : {user_data['entry_point']:.10g}\n"  # Display EP with maximum 10 significant figures
+        f"💸Entry : ```{user_data['entry_point']:.10g}```\n"  # Display EP with monospace formatting
         "⚠️3% of Future Wallet\n"
         f"🏹TP:\n"
-        + "\n".join([f"{tp:.10g}".rstrip('0').rstrip('.') for tp in user_data['tps']]) + "\n"  # TPs formatted appropriately
-        f"❌SL: {user_data['sl']:.10g}\n"  # Display SL with maximum 10 significant figures
+        + "\n".join([f"```{tp:.10g}```".rstrip('0').rstrip('.') for tp in user_data['tps']]) + "\n"  # TPs formatted with monospace
+        f"❌SL: ```{user_data['sl']:.10g}```\n"  # Display SL with monospace formatting
         "@alpha_signalsss 🐺"
     )
 
     user_data['confirm_message'] = confirm_message
 
-    # Create inline keyboard for confirmation
-    markup = types.InlineKeyboardMarkup()
-    yes_button = types.InlineKeyboardButton("Yes", callback_data="confirm_yes")
-    no_button = types.InlineKeyboardButton("No", callback_data="confirm_no")
-    markup.add(yes_button, no_button)
+    # Ask for confirmation to post
+    bot.send_message(message.chat.id, "Here is the signal, please confirm to post:\n\n" + confirm_message)
+    bot.send_message(message.chat.id, "Type 'y' to confirm or 'n' to cancel.")
+    bot.register_next_step_handler(message, confirm_post, time.time())
 
-    # Ask for confirmation to post with buttons
-    bot.send_message(message.chat.id, "Here is the signal, please confirm to post:\n\n" + confirm_message, reply_markup=markup)
-
-# Callback query handler for Yes/No buttons
-@bot.callback_query_handler(func=lambda call: call.data in ['confirm_yes', 'confirm_no'])
-def handle_confirmation(call):
-    if call.data == 'confirm_yes':
+# Function to handle confirmation
+def confirm_post(message, start_time):
+    if time.time() - start_time > TIMEOUT_DURATION:
+        bot.send_message(message.chat.id, "Session timed out. Please start again using /start.")
+        return
+    if message.text.lower() == 'y':
         # Send photo with caption to the channel
         bot.send_photo(chat_id='-1002261291977', photo=user_data['photo'], caption=user_data['confirm_message'])
-        bot.send_message(call.message.chat.id, "Signal posted successfully!")
+        bot.send_message(message.chat.id, "Signal posted successfully!")
     else:
-        bot.send_message(call.message.chat.id, "Posting cancelled.")
+        bot.send_message(message.chat.id, "Posting cancelled.")
 
 # Start the bot and indicate it is running successfully
 if __name__ == "__main__":
