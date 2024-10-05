@@ -1,9 +1,13 @@
 import telebot
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 import time
 
 # Your Telegram Bot Token
 TOKEN = '8012221612:AAGvIO2S9UtdxtK38xi_HDVG3V75zpY_q-U'
 bot = telebot.TeleBot(TOKEN)
+
+# List of channel IDs where the bot should post (add your channel IDs here)
+channel_ids = ['-1002261291977']  # Replace with your channel ID
 
 # Variables to store user input
 user_data = {}
@@ -17,30 +21,38 @@ def start(message):
 # Function to get coin name
 def get_coin_name(message):
     user_data['coin_name'] = message.text
-    bot.send_message(message.chat.id, "Please enter trade type (short or long).")
-    bot.register_next_step_handler(message, get_trade_type)
+    show_trade_type_buttons(message)
 
-# Function to get trade type
-def get_trade_type(message):
-    trade_type = message.text.lower()
-    if trade_type in ['short', 'long']:
-        user_data['trade_type'] = trade_type
-        bot.send_message(message.chat.id, "Please enter strategy (scalp or swing).")
-        bot.register_next_step_handler(message, get_strategy)
-    else:
-        bot.send_message(message.chat.id, "Invalid input. Please enter 'short' or 'long'.")
-        bot.register_next_step_handler(message, get_trade_type)
+# Function to show inline buttons for trade type (short/long)
+def show_trade_type_buttons(message):
+    markup = InlineKeyboardMarkup()
+    markup.row_width = 2
+    markup.add(
+        InlineKeyboardButton("Short", callback_data="short"),
+        InlineKeyboardButton("Long", callback_data="long")
+    )
+    bot.send_message(message.chat.id, "Please select trade type:", reply_markup=markup)
 
-# Function to get strategy
-def get_strategy(message):
-    strategy = message.text.lower()
-    if strategy in ['scalp', 'swing']:
-        user_data['strategy'] = strategy
-        bot.send_message(message.chat.id, "Please enter the entry point (EP).")
-        bot.register_next_step_handler(message, get_entry_point)
-    else:
-        bot.send_message(message.chat.id, "Invalid input. Please enter 'scalp' or 'swing'.")
-        bot.register_next_step_handler(message, get_strategy)
+# Function to show inline buttons for strategy (scalp/swing)
+def show_strategy_buttons(message):
+    markup = InlineKeyboardMarkup()
+    markup.row_width = 2
+    markup.add(
+        InlineKeyboardButton("Scalp", callback_data="scalp"),
+        InlineKeyboardButton("Swing", callback_data="swing")
+    )
+    bot.send_message(message.chat.id, "Please select strategy:", reply_markup=markup)
+
+# Callback handler for buttons
+@bot.callback_query_handler(func=lambda call: True)
+def handle_callback(call):
+    if call.data in ['short', 'long']:
+        user_data['trade_type'] = call.data
+        show_strategy_buttons(call.message)
+    elif call.data in ['scalp', 'swing']:
+        user_data['strategy'] = call.data
+        bot.send_message(call.message.chat.id, "Please enter the entry point (EP).")
+        bot.register_next_step_handler(call.message, get_entry_point)
 
 # Function to format numbers with up to 10 decimal places, trimming trailing zeros
 def format_number(number):
@@ -56,7 +68,7 @@ def get_entry_point(message):
         if user_data['trade_type'] == 'short' and user_data['strategy'] == 'scalp':
             tps = [ep * 0.98, ep * 0.96, ep * 0.94, ep * 0.92, ep * 0.90, ep * 0.88]
             sl = ep * 1.06
-        elif user_data['trade_type'] == 'short' and user_data['strategy'] == 'swing':
+        elif user_data['trade_type'] == 'short' and user_data['strategy'] == 'swing']:
             tps = [ep * 0.95, ep * 0.90, ep * 0.85, ep * 0.80]
             sl = ep * 1.08
         elif user_data['trade_type'] == 'long' and user_data['strategy'] == 'scalp':
@@ -93,16 +105,37 @@ def get_entry_point(message):
         bot.send_message(message.chat.id, "Invalid input. Please enter a valid number for entry point.")
         bot.register_next_step_handler(message, get_entry_point)
 
-# Function to handle confirmation
+# Function to handle confirmation and ask for the image
 def confirm_post(message):
-    try:
-        if message.text.lower() == 'yes':
-            bot.send_message('-1002261291977', user_data['confirm_message'])  # Use channel ID
-            bot.send_message(message.chat.id, "Signal posted successfully!")
-        else:
-            bot.send_message(message.chat.id, "Posting cancelled.")
-    except Exception as e:
-        bot.send_message(message.chat.id, f"Error occurred: {str(e)}")
+    if message.text.lower() == 'yes':
+        bot.send_message(message.chat.id, "Please send the image to be posted with the signal.")
+        bot.register_next_step_handler(message, get_image)
+    else:
+        bot.send_message(message.chat.id, "Posting cancelled.")
+
+# Function to handle image reception and post with caption to the channel
+@bot.message_handler(content_types=['photo'])
+def get_image(message):
+    if message.photo:
+        # Get the file ID of the largest image version (highest resolution)
+        file_id = message.photo[-1].file_id
+        user_data['photo'] = file_id
+
+        # Post the photo with caption to the channel
+        for channel_id in channel_ids:
+            try:
+                bot.send_photo(
+                    channel_id, 
+                    user_data['photo'], 
+                    caption=user_data['confirm_message']
+                )
+            except Exception as e:
+                bot.send_message(message.chat.id, f"Error occurred posting to {channel_id}: {str(e)}")
+        
+        bot.send_message(message.chat.id, "Signal posted successfully with image to the channel!")
+    else:
+        bot.send_message(message.chat.id, "Please send a valid image.")
+        bot.register_next_step_handler(message, get_image)
 
 # Start the bot and indicate it is running successfully
 if __name__ == "__main__":
