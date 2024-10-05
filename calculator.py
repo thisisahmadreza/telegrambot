@@ -112,11 +112,11 @@ def confirm_signal(message):
         f"{user_data['trade_type'].capitalize()}\n"
         f"{user_data['strategy'].capitalize()}\n"
         f"Lv: 20✖️\n"
-        f"💸Entry : `{user_data['entry_point']:.10g}`\n"  # Display EP with monospace formatting
+        f"💸Entry : ```{user_data['entry_point']:.10g}```, parse_mode='MarkdownV2'\n"  # Display EP with monospace formatting
         "⚠️3% of Future Wallet\n"
         f"🏹TP:\n"
-        + "\n".join([f"`{tp:.10g}`".rstrip('0').rstrip('.') for tp in user_data['tps']]) + "\n"  # TPs formatted with monospace
-        f"❌SL: `{user_data['sl']:.10g}`\n"  # Display SL with monospace formatting
+        + "\n".join([f"```{tp:.10g}```".rstrip('0').rstrip('.') for tp in user_data['tps']]) + "\n"  # TPs formatted with monospace
+        f"❌SL: ```{user_data['sl']:.10g}```\n", parse_mode='MarkdownV2'  # Display SL with monospace formatting
         "@alpha_signalsss 🐺"
     )
 
