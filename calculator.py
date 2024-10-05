@@ -1,31 +1,30 @@
 from telegram import Update, ForceReply
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
-from telegram.ext import ConversationHandler
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, ConversationHandler
 
 # Define states for the conversation
 COIN, ENTRY_POINT, TRADE_TYPE, STRATEGY = range(4)
 
 # Start command handler
-def start(update: Update, _: CallbackContext) -> int:
-    update.message.reply_text(
+async def start(update: Update, context) -> int:
+    await update.message.reply_text(
         "Welcome to the Alpha Signal Calculator! Please enter the Coin Name:"
     )
     return COIN
 
 # Handle coin input
-def coin(update: Update, _: CallbackContext) -> int:
-    user_data = _.user_data
+async def coin(update: Update, context) -> int:
+    user_data = context.user_data
     user_data['coin'] = update.message.text
-    update.message.reply_text(
+    await update.message.reply_text(
         "Please enter the Entry Point (EP):"
     )
     return ENTRY_POINT
 
 # Handle entry point input
-def entry_point(update: Update, _: CallbackContext) -> int:
-    user_data = _.user_data
+async def entry_point(update: Update, context) -> int:
+    user_data = context.user_data
     user_data['entry_point'] = float(update.message.text)
-    update.message.reply_text(
+    await update.message.reply_text(
         "Please choose the Trade Type:\n"
         "1. SHORT\n"
         "2. LONG"
@@ -33,10 +32,10 @@ def entry_point(update: Update, _: CallbackContext) -> int:
     return TRADE_TYPE
 
 # Handle trade type input
-def trade_type(update: Update, _: CallbackContext) -> int:
-    user_data = _.user_data
+async def trade_type(update: Update, context) -> int:
+    user_data = context.user_data
     user_data['trade_type'] = update.message.text
-    update.message.reply_text(
+    await update.message.reply_text(
         "Please choose the Strategy:\n"
         "1. SCALP\n"
         "2. SWING"
@@ -44,14 +43,14 @@ def trade_type(update: Update, _: CallbackContext) -> int:
     return STRATEGY
 
 # Handle strategy input and calculate results
-def strategy(update: Update, _: CallbackContext) -> int:
-    user_data = _.user_data
+async def strategy(update: Update, context) -> int:
+    user_data = context.user_data
     user_data['strategy'] = update.message.text
     
     # Perform calculations
     result = calculate_signal(user_data)
     
-    update.message.reply_text(result)
+    await update.message.reply_text(result)
     return ConversationHandler.END
 
 def calculate_signal(data):
@@ -87,29 +86,28 @@ def calculate_signal(data):
     return result
 
 # End the conversation
-def cancel(update: Update, _: CallbackContext) -> int:
-    update.message.reply_text("Operation canceled.")
+async def cancel(update: Update, context) -> int:
+    await update.message.reply_text("Operation canceled.")
     return ConversationHandler.END
 
 def main():
     # Replace 'YOUR_TOKEN_HERE' with your actual bot token
-    updater = Updater("8012221612:AAHd58-95oNM5Tz05uJbEHNMyFgOPjWpyYM")
+    application = Application.builder().token("8012221612:AAHd58-95oNM5Tz05uJbEHNMyFgOPjWpyYM").build()
 
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
         states={
-            COIN: [MessageHandler(Filters.text & ~Filters.command, coin)],
-            ENTRY_POINT: [MessageHandler(Filters.text & ~Filters.command, entry_point)],
-            TRADE_TYPE: [MessageHandler(Filters.text & ~Filters.command, trade_type)],
-            STRATEGY: [MessageHandler(Filters.text & ~Filters.command, strategy)],
+            COIN: [MessageHandler(filters.TEXT & ~filters.COMMAND, coin)],
+            ENTRY_POINT: [MessageHandler(filters.TEXT & ~filters.COMMAND, entry_point)],
+            TRADE_TYPE: [MessageHandler(filters.TEXT & ~filters.COMMAND, trade_type)],
+            STRATEGY: [MessageHandler(filters.TEXT & ~filters.COMMAND, strategy)],
         },
         fallbacks=[CommandHandler('cancel', cancel)],
     )
 
-    updater.dispatcher.add_handler(conv_handler)
+    application.add_handler(conv_handler)
 
-    updater.start_polling()
-    updater.idle()
+    application.run_polling()
 
 if __name__ == '__main__':
     main()
