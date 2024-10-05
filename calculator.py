@@ -122,27 +122,22 @@ def confirm_signal(message):
 
     user_data['confirm_message'] = confirm_message
 
-    # Create Yes/No buttons
-    markup = types.InlineKeyboardMarkup()
-    yes_button = types.InlineKeyboardButton("Yes", callback_data="confirm_yes")
-    no_button = types.InlineKeyboardButton("No", callback_data="confirm_no")
-    markup.add(yes_button, no_button)
-
-    # Ask for confirmation to post with buttons
+    # Ask for confirmation to post
     bot.send_message(message.chat.id, "Here is the signal, please confirm to post:\n\n" + confirm_message)
-    bot.send_message(message.chat.id, "Please confirm:", reply_markup=markup)
+    bot.send_message(message.chat.id, "Type 'yes' to confirm or 'no' to cancel.")
+    bot.register_next_step_handler(message, confirm_post, time.time())
 
-# Callback query handler for Yes/No buttons
-@bot.callback_query_handler(func=lambda call: call.data in ['confirm_yes', 'confirm_no'])
-def handle_confirmation(call):
-    if call.data == 'confirm_yes':
+# Function to handle confirmation
+def confirm_post(message, start_time):
+    if time.time() - start_time > TIMEOUT_DURATION:
+        bot.send_message(message.chat.id, "Session timed out. Please start again using /start.")
+        return
+    if message.text.lower() == 'yes':
         # Send photo with caption to the channel
         bot.send_photo(chat_id='-1002261291977', photo=user_data['photo'], caption=user_data['confirm_message'])
-        bot.send_message(call.message.chat.id, "Signal posted successfully!")
-    elif call.data == 'confirm_no':
-        bot.send_message(call.message.chat.id, "Posting cancelled.")
-    # Remove inline buttons after decision
-    bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id, reply_markup=None)
+        bot.send_message(message.chat.id, "Signal posted successfully!")
+    else:
+        bot.send_message(message.chat.id, "Posting cancelled.")
 
 # Start the bot and indicate it is running successfully
 if __name__ == "__main__":
