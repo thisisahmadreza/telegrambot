@@ -78,6 +78,8 @@ def get_entry_point(message):
             "@alpha_signalsss 🐺"
         )
 
+        user_data['confirm_message'] = confirm_message
+
         bot.send_message(message.chat.id, "Here is the signal, please confirm to post:\n\n" + confirm_message)
         bot.send_message(message.chat.id, "Type 'yes' to confirm or 'no' to cancel.")
         bot.register_next_step_handler(message, confirm_post)
@@ -89,7 +91,7 @@ def get_entry_point(message):
 # Function to handle confirmation
 def confirm_post(message):
     if message.text.lower() == 'yes':
-        bot.send_message('@smndkasnd', user_data['confirm_message'])
+        bot.send_message('@alsigcalbot', user_data['confirm_message'])  # Updated channel ID
         bot.send_message(message.chat.id, "Signal posted successfully!")
     else:
         bot.send_message(message.chat.id, "Posting cancelled.")
