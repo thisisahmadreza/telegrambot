@@ -97,7 +97,7 @@ def get_entry_point(message):
 def confirm_post(message):
     try:
         if message.text.lower() == 'yes':
-            bot.send_message('@alsigcalbot', user_data['confirm_message'])  # Updated channel ID
+            bot.send_message('-1002261291977', user_data['confirm_message'])  # Use channel ID
             bot.send_message(message.chat.id, "Signal posted successfully!")
         else:
             bot.send_message(message.chat.id, "Posting cancelled.")
