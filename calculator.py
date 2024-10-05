@@ -17,7 +17,9 @@ TIMEOUT_DURATION = 60  # Timeout duration in seconds
 # Command to start interaction with bot
 @bot.message_handler(commands=['start'])
 def start(message):
-    user_data.clear()  # Clear previous data to start fresh
+    # Clear previous data and stop ongoing processes
+    user_data.clear()
+    bot.clear_step_handler_by_chat_id(chat_id=message.chat.id)
     bot.send_message(message.chat.id, "Hello! Please provide the coin name.")
     bot.register_next_step_handler(message, get_coin_name, time.time())
 
@@ -25,7 +27,7 @@ def start(message):
 def get_coin_name(message, start_time):
     if time.time() - start_time > TIMEOUT_DURATION:
         bot.send_message(message.chat.id, "Session timed out. Please start again using /start.")
-        user_data.clear()  # Clear user data on timeout
+        user_data.clear()
         return
     user_data['coin_name'] = message.text
     markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
@@ -33,11 +35,11 @@ def get_coin_name(message, start_time):
     bot.send_message(message.chat.id, "Please choose trade type:", reply_markup=markup)
     bot.register_next_step_handler(message, get_trade_type, time.time())
 
-# Function to get trade type using buttons
+# Function to get trade type
 def get_trade_type(message, start_time):
     if time.time() - start_time > TIMEOUT_DURATION:
         bot.send_message(message.chat.id, "Session timed out. Please start again using /start.")
-        user_data.clear()  # Clear user data on timeout
+        user_data.clear()
         return
     trade_type = message.text.lower()
     if trade_type in ['short', 'long']:
@@ -50,11 +52,11 @@ def get_trade_type(message, start_time):
         bot.send_message(message.chat.id, "Invalid input. Please choose 'short' or 'long'.")
         bot.register_next_step_handler(message, get_trade_type, time.time())
 
-# Function to get strategy using buttons
+# Function to get strategy
 def get_strategy(message, start_time):
     if time.time() - start_time > TIMEOUT_DURATION:
         bot.send_message(message.chat.id, "Session timed out. Please start again using /start.")
-        user_data.clear()  # Clear user data on timeout
+        user_data.clear()
         return
     strategy = message.text.lower()
     if strategy in ['scalp', 'swing']:
@@ -69,7 +71,7 @@ def get_strategy(message, start_time):
 def get_entry_point(message, start_time):
     if time.time() - start_time > TIMEOUT_DURATION:
         bot.send_message(message.chat.id, "Session timed out. Please start again using /start.")
-        user_data.clear()  # Clear user data on timeout
+        user_data.clear()
         return
     try:
         ep = float(message.text)
@@ -104,7 +106,7 @@ def get_entry_point(message, start_time):
 def get_photo(message, start_time):
     if time.time() - start_time > TIMEOUT_DURATION:
         bot.send_message(message.chat.id, "Session timed out. Please start again using /start.")
-        user_data.clear()  # Clear user data on timeout
+        user_data.clear()
         return
     if message.content_type == 'photo':
         user_data['photo'] = message.photo[-1].file_id  # Get highest resolution photo
@@ -121,11 +123,11 @@ def confirm_signal(message):
         f"{user_data['trade_type'].capitalize()}\n"
         f"{user_data['strategy'].capitalize()}\n"
         f"Lv: 20✖️\n"
-        f"💸Entry : {user_data['entry_point']:.10g}\n"  # Display EP with maximum 10 significant figures
+        f"💸Entry : {user_data['entry_point']:.10g}\n"
         "⚠️3% of Future Wallet\n"
         f"🏹TP:\n"
-        + "\n".join([f"{tp:.10g}".rstrip('0').rstrip('.') for tp in user_data['tps']]) + "\n"  # TPs formatted appropriately
-        f"❌SL: {user_data['sl']:.10g}\n"  # Display SL with maximum 10 significant figures
+        + "\n".join([f"{tp:.10g}".rstrip('0').rstrip('.') for tp in user_data['tps']]) + "\n"
+        f"❌SL: {user_data['sl']:.10g}\n"
         "@alpha_signalsss 🐺"
     )
 
