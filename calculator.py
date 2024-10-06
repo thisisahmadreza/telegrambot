@@ -1,3 +1,4 @@
+import os
 import telebot
 from telebot import types
 import time
@@ -6,8 +7,13 @@ import logging
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 
-# Your Telegram Bot Token
-TOKEN = '8012221612:AAGvIO2S9UtdxtK38xi_HDVG3V75zpY_q-U'
+# Fetch your Telegram Bot Token from an environment variable
+TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
+
+# Ensure the token is available
+if not TOKEN:
+    raise ValueError("Error: No TELEGRAM_BOT_TOKEN found. Set it as an environment variable.")
+
 bot = telebot.TeleBot(TOKEN)
 
 # Variables to store user input
