@@ -85,39 +85,60 @@ def check_password(message):
         active_sessions.pop(chat_id, None)  # Clear active session
 
 @ensure_authenticated
+# Function to get coin name
 def get_coin_name(message):
     chat_id = message.chat.id
+    if not user_data[chat_id].get('authenticated', False):
+        bot.send_message(chat_id, "You need to be authenticated to use this bot. Please restart with /start.")
+        return
+
     user_data[chat_id]['coin_name'] = message.text
     markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
     markup.add('short', 'long')
     bot.send_message(chat_id, "Please choose trade type:", reply_markup=markup)
     bot.register_next_step_handler(message, get_trade_type)
 
+
 @ensure_authenticated
+# Function to get trade type using buttons
 def get_trade_type(message):
     chat_id = message.chat.id
+    if not user_data[chat_id].get('authenticated', False):
+        bot.send_message(chat_id, "You need to be authenticated to use this bot. Please restart with /start.")
+        return
+
     trade_type = message.text.lower()
     if trade_type in ['short', 'long']:
         user_data[chat_id]['trade_type'] = trade_type
         markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
         markup.add('scalp', 'swing')
+
+        # Remove previous keyboard after the user has selected a trade type
         bot.send_message(chat_id, "Please choose strategy:", reply_markup=markup)
         bot.register_next_step_handler(message, get_strategy)
     else:
         bot.send_message(chat_id, "Invalid input. Please choose 'short' or 'long'.")
         bot.register_next_step_handler(message, get_trade_type)
 
+
 @ensure_authenticated
+# Function to get strategy using buttons
 def get_strategy(message):
     chat_id = message.chat.id
+    if not user_data[chat_id].get('authenticated', False):
+        bot.send_message(chat_id, "You need to be authenticated to use this bot. Please restart with /start.")
+        return
+
     strategy = message.text.lower()
     if strategy in ['scalp', 'swing']:
         user_data[chat_id]['strategy'] = strategy
-        bot.send_message(chat_id, "Please enter the entry point (EP).")
+        # Remove keyboard after user selects strategy
+        bot.send_message(chat_id, "Please enter the entry point (EP).", reply_markup=types.ReplyKeyboardRemove())
         bot.register_next_step_handler(message, get_entry_point)
     else:
         bot.send_message(chat_id, "Invalid input. Please choose 'scalp' or 'swing'.")
         bot.register_next_step_handler(message, get_strategy)
+
 
 @ensure_authenticated
 def get_entry_point(message):
