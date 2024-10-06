@@ -14,7 +14,7 @@ bot = telebot.TeleBot(TOKEN)
 user_data = {}
 TIMEOUT_DURATION = 60  # Timeout duration in seconds
 active_sessions = {}  # Track active sessions by user ID
-PASSWORD = "your_password_here"  # Set your desired password
+PASSWORD = "alpha1"  # Set your desired password
 
 # Command to start interaction with the bot
 @bot.message_handler(commands=['start'])
