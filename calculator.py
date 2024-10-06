@@ -8,7 +8,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 
 # Fetch your Telegram Bot Token from an environment variable
-TOKEN = os.getenv('8012221612:AAGvIO2S9UtdxtK38xi_HDVG3V75zpY_q-U')
+TOKEN = os.getenv("8012221612:AAGvIO2S9UtdxtK38xi_HDVG3V75zpY_q-U")
 
 # Ensure the token is available
 if not TOKEN:
