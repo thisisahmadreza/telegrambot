@@ -1,4 +1,3 @@
-import os
 import telebot
 from telebot import types
 import time
@@ -7,20 +6,14 @@ import logging
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 
-# Fetch your Telegram Bot Token from an environment variable
-TOKEN = os.getenv("8012221612:AAGvIO2S9UtdxtK38xi_HDVG3V75zpY_q-U")
-
-# Ensure the token is available
-if not TOKEN:
-    raise ValueError("Error: No TELEGRAM_BOT_TOKEN found. Set it as an environment variable.")
-
+# Your Telegram Bot Token
+TOKEN = '8012221612:AAGvIO2S9UtdxtK38xi_HDVG3V75zpY_q-U'
 bot = telebot.TeleBot(TOKEN)
 
 # Variables to store user input
 user_data = {}
 TIMEOUT_DURATION = 60  # Timeout duration in seconds
 active_sessions = {}  # Track active sessions by user ID
-BOT_VERSION = "1.0.0"  # Define your bot version here
 
 # Command to start interaction with the bot
 @bot.message_handler(commands=['start'])
@@ -32,55 +25,50 @@ def start(message):
         bot.clear_step_handler_by_chat_id(chat_id)
         active_sessions.pop(chat_id, None)
 
-    user_data[chat_id] = {}  # Initialize a new session
+    # Initialize a new session
+    user_data[chat_id] = {}
     bot.send_message(chat_id, "Please provide the coin name.")
     active_sessions[chat_id] = time.time()  # Track session start time
     bot.register_next_step_handler(message, get_coin_name)
-
-# Command to display the bot version
-@bot.message_handler(commands=['version'])
-def version(message):
-    bot.send_message(message.chat.id, f"Bot Version: {BOT_VERSION}")
 
 # Function to get coin name
 def get_coin_name(message):
     chat_id = message.chat.id
     user_data[chat_id]['coin_name'] = message.text
-
-    # Create inline buttons for short/long trade type
-    markup = types.InlineKeyboardMarkup()
-    short_button = types.InlineKeyboardButton("Short", callback_data="trade_short")
-    long_button = types.InlineKeyboardButton("Long", callback_data="trade_long")
-    markup.add(short_button, long_button)
+    markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
+    markup.add('short', 'long')
     bot.send_message(chat_id, "Please choose trade type:", reply_markup=markup)
+    bot.register_next_step_handler(message, get_trade_type)
 
-# Handling trade type button presses
-@bot.callback_query_handler(func=lambda call: call.data.startswith("trade_"))
-def handle_trade_type(call):
-    chat_id = call.message.chat.id
-    trade_type = call.data.split("_")[1]
-    user_data[chat_id]['trade_type'] = trade_type
+# Function to get trade type using buttons
+def get_trade_type(message):
+    chat_id = message.chat.id
+    trade_type = message.text.lower()
+    if trade_type in ['short', 'long']:
+        user_data[chat_id]['trade_type'] = trade_type
+        markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
+        markup.add('scalp', 'swing')
+        bot.send_message(chat_id, "Please choose strategy:", reply_markup=markup)
+        bot.register_next_step_handler(message, get_strategy)
+    else:
+        bot.send_message(chat_id, "Invalid input. Please choose 'short' or 'long'.")
+        bot.register_next_step_handler(message, get_trade_type)
 
-    # Create inline buttons for scalp/swing strategy
-    markup = types.InlineKeyboardMarkup()
-    scalp_button = types.InlineKeyboardButton("Scalp", callback_data="strategy_scalp")
-    swing_button = types.InlineKeyboardButton("Swing", callback_data="strategy_swing")
-    markup.add(scalp_button, swing_button)
-    bot.send_message(chat_id, "Please choose strategy:", reply_markup=markup)
-
-# Handling strategy button presses
-@bot.callback_query_handler(func=lambda call: call.data.startswith("strategy_"))
-def handle_strategy(call):
-    chat_id = call.message.chat.id
-    strategy = call.data.split("_")[1]
-    user_data[chat_id]['strategy'] = strategy
-    bot.send_message(chat_id, "Please enter the entry point (EP).")
-    bot.register_next_step_handler(call.message, get_entry_point)
+# Function to get strategy using buttons
+def get_strategy(message):
+    chat_id = message.chat.id
+    strategy = message.text.lower()
+    if strategy in ['scalp', 'swing']:
+        user_data[chat_id]['strategy'] = strategy
+        bot.send_message(chat_id, "Please enter the entry point (EP).")
+        bot.register_next_step_handler(message, get_entry_point)
+    else:
+        bot.send_message(chat_id, "Invalid input. Please choose 'scalp' or 'swing'.")
+        bot.register_next_step_handler(message, get_strategy)
 
 # Function to get entry point and calculate TP and SL
 def get_entry_point(message):
     chat_id = message.chat.id
-    
     try:
         ep = float(message.text)
         user_data[chat_id]['entry_point'] = ep
@@ -116,6 +104,7 @@ def get_entry_point(message):
 # Function to receive photo and confirm before posting
 def get_photo(message):
     chat_id = message.chat.id
+
     if message.content_type == 'photo':
         user_data[chat_id]['photo'] = message.photo[-1].file_id  # Get highest resolution photo
         confirm_signal(message)
