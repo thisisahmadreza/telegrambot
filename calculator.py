@@ -33,7 +33,7 @@ def start(message):
         active_sessions.pop(chat_id, None)
 
     # Check if user is already authenticated
-    if chat_id in user_data and user_data[chat_id].get('authenticated', False):
+    if user_data.get(chat_id, {}).get('authenticated', False):
         bot.send_message(chat_id, "Welcome back! Please provide the coin name.")
         active_sessions[chat_id] = time.time()  # Track session start time
         bot.register_next_step_handler(message, get_coin_name)
@@ -159,39 +159,36 @@ def confirm_signal(message):
         f"{user_data[chat_id]['strategy'].capitalize()}\n"
         f"Lv: 20✖️\n"
         f"💸Entry : {user_data[chat_id]['entry_point']:.10g}\n"  # Display EP with maximum 10 significant figures
-        "⚠️3% of Future Wallet\n"
-        f"🏹TP:\n"
-        + "\n".join([f"{tp:.10g}".rstrip('0').rstrip('.') for tp in user_data[chat_id]['tps']]) + "\n"  # TPs formatted appropriately
-        f"❌SL: {user_data[chat_id]['sl']:.10g}\n"  # Display SL with maximum 10 significant figures
-        " \n"
-        "@alpha_signalsss 🐺"
+        "🎯 Targets :\n" +
+        "\n".join([f"{i+1} : {tp:.10g}" for i, tp in enumerate(user_data[chat_id]['tps'])]) + "\n"
+        f"🛡Stop : {user_data[chat_id]['sl']:.10g}"
     )
 
     user_data[chat_id]['confirm_message'] = confirm_message
 
-    # Create inline keyboard for confirmation
+    # Confirm and proceed
     markup = types.InlineKeyboardMarkup()
     yes_button = types.InlineKeyboardButton("Yes", callback_data="confirm_yes")
     no_button = types.InlineKeyboardButton("No", callback_data="confirm_no")
-    markup.add(yes_button, no_button)
+    markup.add(yes_button, no_button)  # Inline buttons horizontally
 
-    bot.send_message(chat_id, "Here is the signal, please confirm to post:\n\n" + confirm_message, reply_markup=markup)
+    bot.send_photo(chat_id, user_data[chat_id]['photo'], caption=confirm_message)
+    bot.send_message(chat_id, "Confirm the signal:", reply_markup=markup)
 
-# Handling confirmation button presses
-@bot.callback_query_handler(func=lambda call: call.data.startswith("confirm_"))
+# Handle confirmation callbacks
+@bot.callback_query_handler(func=lambda call: call.data in ["confirm_yes", "confirm_no"])
 def handle_confirmation(call):
     chat_id = call.message.chat.id
-    if call.data == "confirm_yes":
-        post_to_channel(chat_id)  # Post to channel if confirmed
-    else:
-        bot.send_message(chat_id, "Signal posting canceled.")
-        user_data.pop(chat_id, None)  # Clear user data after cancellation
 
-# Function to post to channel
-def post_to_channel(chat_id):
-    bot.send_photo(chat_id='@alpha_signalsss', photo=user_data[chat_id]['photo'], caption=user_data[chat_id]['confirm_message'])
-    bot.send_message(chat_id, "Signal posted successfully!")
-    user_data.pop(chat_id, None)  # Clear user data after posting
+    if call.data == "confirm_yes":
+        bot.send_message(chat_id, "Signal confirmed. Posting...")
+        # Here you would add code to post the signal
+        bot.send_photo('@alpha_signalsss', photo=user_data[chat_id]['photo'], caption=user_data[chat_id]['confirm_message'])
+        bot.send_message(chat_id, "Signal posted successfully!")
+        user_data.pop(chat_id, None)  # Clear user data after posting
+    else:
+        bot.send_message(chat_id, "Signal cancelled. Restart with /start.")
+        user_data.pop(chat_id, None)  # Clear user data after cancelling
 
 # Polling
 if __name__ == "__main__":
