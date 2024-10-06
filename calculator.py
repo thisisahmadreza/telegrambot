@@ -167,7 +167,8 @@ def confirm_signal(message):
     markup.add(yes_button, no_button)
 
     # Ask for confirmation to post with buttons
-    bot.send_message(chat_id, "Here is the signal, please confirm to post:\n\n" + confirm_message, reply_markup=markup)
+    sent_message = bot.send_message(chat_id, "Here is the signal, please confirm to post:\n\n" + confirm_message, reply_markup=markup)
+    user_data[chat_id]['sent_message_id'] = sent_message.message_id  # Store the sent message ID
 
 # Callback query handler for Yes/No buttons
 @bot.callback_query_handler(func=lambda call: call.data in ['confirm_yes', 'confirm_no'])
@@ -175,14 +176,40 @@ def handle_confirmation(call):
     chat_id = call.message.chat.id
     if call.data == 'confirm_yes':
         # Send photo with caption to the channel
-        bot.send_photo(chat_id='-1002261291977', photo=user_data[chat_id]['photo'], caption=user_data[chat_id]['confirm_message'])
+        sent_message = bot.send_photo(chat_id='-1002261291977', photo=user_data[chat_id]['photo'], caption=user_data[chat_id]['confirm_message'])
+        user_data[chat_id]['sent_message_id'] = sent_message.message_id  # Store the sent message ID
         bot.send_message(chat_id, "Signal posted successfully!")
     else:
-        bot.send_message(chat_id, "Posting cancelled.")
-        user_data.pop(chat_id, None)
-        active_sessions.pop(chat_id, None)
+        bot.send_message(chat_id, "Signal posting canceled.")
 
-# Start the bot and indicate it is running successfully
-if __name__ == "__main__":
-    print("Bot is running successfully!")
+# Message handler to edit original post based on admin's reply
+@bot.message_handler(func=lambda message: message.chat.id == -1002261291977 and message.reply_to_message is not None)
+def handle_channel_replies(message):
+    # Check if the message is a reply to the bot's message
+    if message.reply_to_message.from_user.id == bot.get_me().id:
+        chat_id = message.chat.id
+        
+        # Extract original message details
+        original_message_id = user_data[message.reply_to_message.chat.id]['sent_message_id']
+        original_message = user_data[message.reply_to_message.chat.id]['confirm_message']
+        
+        # Modify the original message based on the admin's reply
+        updated_message = original_message
+        
+        if "TP 1" in message.text:
+            updated_message = updated_message.replace(f"{user_data[chat_id]['tps'][0]:.10g}", f"✅ {user_data[chat_id]['tps'][0]:.10g}")
+        if "TP 2" in message.text:
+            updated_message = updated_message.replace(f"{user_data[chat_id]['tps'][1]:.10g}", f"✅ {user_data[chat_id]['tps'][1]:.10g}")
+        if "TP 3" in message.text:
+            updated_message = updated_message.replace(f"{user_data[chat_id]['tps'][2]:.10g}", f"✅ {user_data[chat_id]['tps'][2]:.10g}")
+        if "TP 4" in message.text:
+            updated_message = updated_message.replace(f"{user_data[chat_id]['tps'][3]:.10g}", f"✅ {user_data[chat_id]['tps'][3]:.10g}")
+        if "Stop 🛑🙏🏻" in message.text:
+            updated_message = updated_message.replace(f"❌SL: {user_data[chat_id]['sl']:.10g}", f"✅SL: {user_data[chat_id]['sl']:.10g}")
+
+        # Edit the original message with updated content
+        bot.edit_message_caption(chat_id=chat_id, message_id=original_message_id, caption=updated_message)
+
+# Run the bot
+if __name__ == '__main__':
     bot.polling(none_stop=True)
