@@ -12,7 +12,7 @@ bot = telebot.TeleBot(TOKEN)
 
 # Variables to store user input
 user_data = {}
-posted_messages = {}  # To track posted messages
+posted_messages = {}  # To track posted messages and message_ids
 TIMEOUT_DURATION = 60  # Timeout duration in seconds
 
 # Command to start interaction with bot
@@ -122,11 +122,11 @@ def confirm_signal(message):
         f"{user_data['trade_type'].capitalize()}\n"
         f"{user_data['strategy'].capitalize()}\n"
         f"Lv: 20✖️\n"
-        f"💸Entry : ```{user_data['entry_point']:.10g}```\n"  # Display EP with maximum 10 significant figures
+        f"💸Entry : {user_data['entry_point']:.10g}\n"  # Display EP with maximum 10 significant figures
         "⚠️3% of Future Wallet\n"
         f"🏹TP:\n"
-        + "\n".join([f"```{tp:.10g}```" for tp in user_data['tps']]) + "\n"  # TPs formatted appropriately
-        f"❌SL: ```{user_data['sl']:.10g}```\n"  # Display SL with maximum 10 significant figures
+        + "\n".join([f"{tp:.10g}".rstrip('0').rstrip('.') for tp in user_data['tps']]) + "\n"  # TPs formatted appropriately
+        f"❌SL: {user_data['sl']:.10g}\n"  # Display SL with maximum 10 significant figures
         "@alpha_signalsss 🐺"
     )
 
@@ -155,7 +155,8 @@ def handle_confirmation(call):
             'coin_name': user_data['coin_name'],
             'trade_type': user_data['trade_type'],
             'strategy': user_data['strategy'],
-            'entry_point': user_data['entry_point']
+            'entry_point': user_data['entry_point'],
+            'photo': user_data['photo']  # Store photo for editing
         }
 
         bot.send_message(call.message.chat.id, "Signal posted successfully!")
@@ -166,15 +167,13 @@ def handle_confirmation(call):
 @bot.message_handler(func=lambda message: message.reply_to_message and message.chat.id == -1002261291977)
 def handle_admin_update(message):
     original_message_id = message.reply_to_message.message_id
-    chat_id = message.chat.id
+    content = message.text.lower()
 
-    # Check if the replied message is one of the bot's original posts
     if original_message_id in posted_messages:
-        content = message.text.lower()
         original_post_data = posted_messages[original_message_id]
-        
-        # Update TP or SL based on the admin's reply
         updated = False
+
+        # Check for TP and SL updates
         if "tp 1" in content:
             original_post_data['tps'][0] = "✅ " + str(original_post_data['tps'][0])
             updated = True
@@ -198,19 +197,18 @@ def handle_admin_update(message):
                 f"{original_post_data['trade_type'].capitalize()}\n"
                 f"{original_post_data['strategy'].capitalize()}\n"
                 f"Lv: 20✖️\n"
-                f"💸Entry : ```{original_post_data['entry_point']:.10g}```\n"
+                f"💸Entry : {original_post_data['entry_point']:.10g}\n"
                 "⚠️3% of Future Wallet\n"
                 f"🏹TP:\n"
-                + "\n".join([f"```{tp}```" for tp in original_post_data['tps']]) + "\n"
-                f"❌SL: ```{original_post_data['sl']}```\n"
+                + "\n".join([f"{tp}" for tp in original_post_data['tps']]) + "\n"
+                f"❌SL: {original_post_data['sl']}\n"
                 "@alpha_signalsss 🐺"
             )
             
             # Edit the original message
-            bot.edit_message_caption(chat_id=chat_id, message_id=original_message_id, caption=updated_message)
-
+            bot.edit_message_caption(chat_id=message.chat.id, message_id=original_message_id, caption=updated_message)
     else:
-        bot.send_message(chat_id, "This reply doesn't match any bot-generated post.")
+        bot.send_message(message.chat.id, "This reply doesn't match any bot-generated post.")
 
 # Start polling for updates
 if __name__ == '__main__':
