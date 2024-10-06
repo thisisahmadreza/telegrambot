@@ -66,8 +66,10 @@ def get_coin_name(message):
 
     # Show inline buttons for trade type (short/long)
     markup = types.InlineKeyboardMarkup()
-    markup.add(types.InlineKeyboardButton("Short", callback_data="short"),
-               types.InlineKeyboardButton("Long", callback_data="long"))
+    short_button = types.InlineKeyboardButton("Short", callback_data="short")
+    long_button = types.InlineKeyboardButton("Long", callback_data="long")
+    markup.add(short_button)  # Short button on one line
+    markup.add(long_button)   # Long button on the next line
     bot.send_message(chat_id, "Please choose trade type:", reply_markup=markup)
 
 # Handling trade type selection
@@ -79,16 +81,19 @@ def handle_trade_type_selection(call):
 
     # Show inline buttons for strategy (scalp/swing)
     markup = types.InlineKeyboardMarkup()
-    markup.add(types.InlineKeyboardButton("Scalp", callback_data="scalp"),
-               types.InlineKeyboardButton("Swing", callback_data="swing"))
+    scalp_button = types.InlineKeyboardButton("Scalp", callback_data="scalp")
+    swing_button = types.InlineKeyboardButton("Swing", callback_data="swing")
+    markup.add(scalp_button)  # Scalp button on one line
+    markup.add(swing_button)  # Swing button on the next line
     bot.send_message(chat_id, "Please choose strategy:", reply_markup=markup)
 
 # Handling strategy selection
 @bot.callback_query_handler(func=lambda call: call.data in ["scalp", "swing"])
 def handle_strategy_selection(call):
     chat_id = call.message.chat.id
-    user_data[chat_id]['strategy'] = call.data  # Store selected strategy
-    bot.send_message(chat_id, "Please enter the entry point (EP).", reply_markup=types.ReplyKeyboardRemove())
+    strategy = call.data
+    user_data[chat_id]['strategy'] = strategy
+    bot.send_message(chat_id, "Please enter the entry point (EP).")
     bot.register_next_step_handler(call.message, get_entry_point)
 
 # Function to get entry point and calculate TP and SL
@@ -184,26 +189,10 @@ def handle_confirmation(call):
 
 # Function to post to channel
 def post_to_channel(chat_id):
-    bot.send_photo(chat_id='-1002261291977', photo=user_data[chat_id]['photo'], caption=user_data[chat_id]['confirm_message'])
-    bot.send_message(chat_id, "Signal posted to channel successfully!")
+    bot.send_photo(chat_id='@alpha_signalsss', photo=user_data[chat_id]['photo'], caption=user_data[chat_id]['confirm_message'])
+    bot.send_message(chat_id, "Signal posted successfully!")
     user_data.pop(chat_id, None)  # Clear user data after posting
-    active_sessions.pop(chat_id, None)  # End active session
 
-# Function to handle timeout if user is inactive
-def handle_timeout():
-    while True:
-        current_time = time.time()
-        for chat_id, start_time in list(active_sessions.items()):
-            if current_time - start_time > TIMEOUT_DURATION:
-                bot.send_message(chat_id, "Session timed out due to inactivity. Please restart with /start.")
-                active_sessions.pop(chat_id, None)  # End session after timeout
-                user_data.pop(chat_id, None)  # Clear user data after timeout
-        time.sleep(5)
-
-import threading
-timeout_thread = threading.Thread(target=handle_timeout)
-timeout_thread.daemon = True
-timeout_thread.start()
-
-# Polling to keep the bot running
-bot.infinity_polling()
+# Polling
+if __name__ == "__main__":
+    bot.polling()
