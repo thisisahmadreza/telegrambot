@@ -154,6 +154,7 @@ def confirm_signal(message):
         f"🏹TP:\n"
         + "\n".join([f"```{tp:.10g}```".rstrip('0').rstrip('.') for tp in user_data[chat_id]['tps']]) + "\n"  # TPs formatted appropriately
         f"❌SL: ```{user_data[chat_id]['sl']:.10g}```\n"  # Display SL with maximum 10 significant figures
+        "/n"
         "@alpha_signalsss 🐺"
     )
 
