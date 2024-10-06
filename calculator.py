@@ -10,7 +10,7 @@ logging.basicConfig(level=logging.INFO)
 TOKEN = '8012221612:AAGvIO2S9UtdxtK38xi_HDVG3V75zpY_q-U'
 bot = telebot.TeleBot(TOKEN)
 
-# Variables to store user input
+# Variables to store user input and posted messages
 user_data = {}
 posted_messages = {}  # To track posted messages and message_ids
 TIMEOUT_DURATION = 60  # Timeout duration in seconds
@@ -34,7 +34,7 @@ def get_coin_name(message, start_time):
     bot.send_message(message.chat.id, "Please choose trade type:", reply_markup=markup)
     bot.register_next_step_handler(message, get_trade_type, time.time())
 
-# Function to get trade type using buttons
+# Function to get trade type
 def get_trade_type(message, start_time):
     if time.time() - start_time > TIMEOUT_DURATION:
         bot.send_message(message.chat.id, "Session timed out. Please start again using /start.")
@@ -51,7 +51,7 @@ def get_trade_type(message, start_time):
         bot.send_message(message.chat.id, "Invalid input. Please choose 'short' or 'long'.")
         bot.register_next_step_handler(message, get_trade_type, time.time())
 
-# Function to get strategy using buttons
+# Function to get strategy
 def get_strategy(message, start_time):
     if time.time() - start_time > TIMEOUT_DURATION:
         bot.send_message(message.chat.id, "Session timed out. Please start again using /start.")
@@ -165,8 +165,8 @@ def handle_confirmation(call):
 
 # Listen for replies from admins in the channel to update TP/SL
 @bot.message_handler(func=lambda message: message.reply_to_message and message.chat.id == -1002261291977)
-def handle_admin_update(message):
-    original_message_id = message.reply_to_message.message_id
+def handle_admin_reply(message):
+    original_message_id = message.reply_to_message.message_id  # ID of the original message (signal) being replied to
     content = message.text.lower()
 
     if original_message_id in posted_messages:
