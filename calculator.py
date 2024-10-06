@@ -26,17 +26,23 @@ def start(message):
         bot.clear_step_handler_by_chat_id(chat_id)
         active_sessions.pop(chat_id, None)
 
-    user_data[chat_id] = {}  # Initialize a new session
-    bot.send_message(chat_id, "Please enter the password to access the bot:")
-    bot.register_next_step_handler(message, check_password)
+    # Check if user is already authenticated
+    if chat_id in user_data and user_data[chat_id].get('authenticated', False):
+        bot.send_message(chat_id, "Welcome back! Please provide the coin name.")
+        active_sessions[chat_id] = time.time()  # Track session start time
+        bot.register_next_step_handler(message, get_coin_name)
+    else:
+        user_data[chat_id] = {}  # Initialize a new session
+        bot.send_message(chat_id, "Please enter the password to access the bot:")
+        bot.register_next_step_handler(message, check_password)
 
 # Function to check password
 def check_password(message):
     chat_id = message.chat.id
     if message.text == PASSWORD:
+        user_data[chat_id]['authenticated'] = True  # Set user as authenticated
         bot.send_message(chat_id, "Access granted! Please provide the coin name.")
         active_sessions[chat_id] = time.time()  # Track session start time
-        user_data[chat_id]['authenticated'] = True  # Set user as authenticated
         bot.register_next_step_handler(message, get_coin_name)
     else:
         bot.send_message(chat_id, "Incorrect password. Please restart with /start.")
@@ -46,7 +52,7 @@ def check_password(message):
 # Function to get coin name
 def get_coin_name(message):
     chat_id = message.chat.id
-    if chat_id not in user_data or not user_data[chat_id].get('authenticated', False):
+    if not user_data[chat_id].get('authenticated', False):
         bot.send_message(chat_id, "You need to be authenticated to use this bot. Please restart with /start.")
         return
 
@@ -178,13 +184,12 @@ def handle_confirmation(call):
     if call.data == "confirm_yes":
         post_to_channel(chat_id)  # Post to channel if confirmed
     else:
-        bot.send_message(chat_id, "Signal creation canceled. Please restart with /start.")
+        bot.send_message(chat_id, "Signal posting canceled.")
         user_data.pop(chat_id, None)  # Clear user data after cancellation
 
-# Function to post the signal to the channel
+# Function to post to channel
 def post_to_channel(chat_id):
-    channel_id = "-1002261291977"  # Replace with your actual channel ID
-    bot.send_photo(channel_id, photo=user_data[chat_id]['photo'], caption=user_data[chat_id]['confirm_message'])
+    bot.send_photo(chat_id='-1002261291977', photo=user_data[chat_id]['photo'], caption=user_data[chat_id]['confirm_message'])
     bot.send_message(chat_id, "Signal posted to channel successfully!")
     user_data.pop(chat_id, None)  # Clear user data after posting
 
