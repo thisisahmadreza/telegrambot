@@ -3,12 +3,14 @@ import telebot
 from telebot import types
 import time
 import logging
+import hashlib
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 
-# Fetch your Telegram Bot Token from an environment variable
+# Fetch your Telegram Bot Token and password hash from environment variables
 TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
+PASSWORD_HASH = os.getenv("PASSWORD_HASH")
 
 # Ensure the token is available
 if not TOKEN:
@@ -19,8 +21,35 @@ bot = telebot.TeleBot(TOKEN)
 # Variables to store user input
 user_data = {}
 TIMEOUT_DURATION = 60  # Timeout duration in seconds
+CONFIRMATION_TIMEOUT = 120  # Time limit for confirmation in seconds
 active_sessions = {}  # Track active sessions by user ID
-PASSWORD = "alpha1"  # Set your desired password
+
+# Function to hash passwords
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
+
+# Function to check if session is still valid
+def is_session_active(chat_id):
+    if chat_id in active_sessions:
+        elapsed_time = time.time() - active_sessions[chat_id]
+        if elapsed_time > TIMEOUT_DURATION:
+            bot.send_message(chat_id, "Session expired. Please start again with /start.")
+            user_data.pop(chat_id, None)
+            active_sessions.pop(chat_id, None)
+            return False
+    return True
+
+# Decorator to check if user is authenticated and session is active
+def ensure_authenticated(func):
+    def wrapper(message):
+        chat_id = message.chat.id
+        if chat_id not in user_data or not user_data[chat_id].get('authenticated', False):
+            bot.send_message(chat_id, "You need to be authenticated to use this bot. Please restart with /start.")
+        elif not is_session_active(chat_id):
+            return
+        else:
+            func(message)
+    return wrapper
 
 # Command to start interaction with the bot
 @bot.message_handler(commands=['start'])
@@ -45,7 +74,7 @@ def start(message):
 # Function to check password
 def check_password(message):
     chat_id = message.chat.id
-    if message.text == PASSWORD:
+    if hash_password(message.text) == PASSWORD_HASH:
         user_data[chat_id]['authenticated'] = True  # Set user as authenticated
         bot.send_message(chat_id, "Access granted! Please provide the coin name.")
         active_sessions[chat_id] = time.time()  # Track session start time
@@ -55,26 +84,18 @@ def check_password(message):
         user_data.pop(chat_id, None)  # Clear user data if password is incorrect
         active_sessions.pop(chat_id, None)  # Clear active session
 
-# Function to get coin name
+@ensure_authenticated
 def get_coin_name(message):
     chat_id = message.chat.id
-    if not user_data[chat_id].get('authenticated', False):
-        bot.send_message(chat_id, "You need to be authenticated to use this bot. Please restart with /start.")
-        return
-
     user_data[chat_id]['coin_name'] = message.text
     markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
     markup.add('short', 'long')
     bot.send_message(chat_id, "Please choose trade type:", reply_markup=markup)
     bot.register_next_step_handler(message, get_trade_type)
 
-# Function to get trade type using buttons
+@ensure_authenticated
 def get_trade_type(message):
     chat_id = message.chat.id
-    if not user_data[chat_id].get('authenticated', False):
-        bot.send_message(chat_id, "You need to be authenticated to use this bot. Please restart with /start.")
-        return
-
     trade_type = message.text.lower()
     if trade_type in ['short', 'long']:
         user_data[chat_id]['trade_type'] = trade_type
@@ -86,13 +107,9 @@ def get_trade_type(message):
         bot.send_message(chat_id, "Invalid input. Please choose 'short' or 'long'.")
         bot.register_next_step_handler(message, get_trade_type)
 
-# Function to get strategy using buttons
+@ensure_authenticated
 def get_strategy(message):
     chat_id = message.chat.id
-    if not user_data[chat_id].get('authenticated', False):
-        bot.send_message(chat_id, "You need to be authenticated to use this bot. Please restart with /start.")
-        return
-
     strategy = message.text.lower()
     if strategy in ['scalp', 'swing']:
         user_data[chat_id]['strategy'] = strategy
@@ -102,13 +119,9 @@ def get_strategy(message):
         bot.send_message(chat_id, "Invalid input. Please choose 'scalp' or 'swing'.")
         bot.register_next_step_handler(message, get_strategy)
 
-# Function to get entry point and calculate TP and SL
+@ensure_authenticated
 def get_entry_point(message):
     chat_id = message.chat.id
-    if not user_data[chat_id].get('authenticated', False):
-        bot.send_message(chat_id, "You need to be authenticated to use this bot. Please restart with /start.")
-        return
-    
     try:
         ep = float(message.text)
         user_data[chat_id]['entry_point'] = ep
@@ -141,13 +154,9 @@ def get_entry_point(message):
         bot.send_message(chat_id, "Invalid input. Please enter a valid number for entry point.")
         bot.register_next_step_handler(message, get_entry_point)
 
-# Function to receive photo and confirm before posting
+@ensure_authenticated
 def get_photo(message):
     chat_id = message.chat.id
-    if not user_data[chat_id].get('authenticated', False):
-        bot.send_message(chat_id, "You need to be authenticated to use this bot. Please restart with /start.")
-        return
-
     if message.content_type == 'photo':
         user_data[chat_id]['photo'] = message.photo[-1].file_id  # Get highest resolution photo
         confirm_signal(message)
@@ -155,20 +164,22 @@ def get_photo(message):
         bot.send_message(chat_id, "Please send a valid photo.")
         bot.register_next_step_handler(message, get_photo)
 
-# Function to confirm the post
 def confirm_signal(message):
     chat_id = message.chat.id
+    # Store the time when the confirmation is sent
+    user_data[chat_id]['confirmation_time'] = time.time()
+
     # Confirmation message with TP and SL
     confirm_message = (
         f"🪙 {user_data[chat_id]['coin_name']}\n"
         f"{user_data[chat_id]['trade_type'].capitalize()}\n"
         f"{user_data[chat_id]['strategy'].capitalize()}\n"
         f"Lv: 20✖️\n"
-        f"💸Entry : {user_data[chat_id]['entry_point']:.10g}\n"  # Display EP with maximum 10 significant figures
+        f"💸Entry : {user_data[chat_id]['entry_point']:.10g}\n"
         "⚠️3% of Future Wallet\n"
         f"🏹TP:\n"
-        + "\n".join([f"{tp:.10g}".rstrip('0').rstrip('.') for tp in user_data[chat_id]['tps']]) + "\n"  # TPs formatted appropriately
-        f"❌SL: {user_data[chat_id]['sl']:.10g}\n"  # Display SL with maximum 10 significant figures
+        + "\n".join([f"{tp:.10g}".rstrip('0').rstrip('.') for tp in user_data[chat_id]['tps']]) + "\n"
+        f"❌SL: {user_data[chat_id]['sl']:.10g}\n"
         " \n"
         "@alpha_signalsss 🐺"
     )
@@ -187,19 +198,31 @@ def confirm_signal(message):
 @bot.callback_query_handler(func=lambda call: call.data.startswith("confirm_"))
 def handle_confirmation(call):
     chat_id = call.message.chat.id
+    elapsed_time = time.time() - user_data[chat_id]['confirmation_time']
+    if elapsed_time > CONFIRMATION_TIMEOUT:
+        bot.send_message(chat_id, "Confirmation expired. Please start again.")
+        user_data.pop(chat_id, None)
+        return
+
     if call.data == "confirm_yes":
         post_to_channel(chat_id)  # Post to channel if confirmed
     else:
         bot.send_message(chat_id, "Signal posting canceled.")
         user_data.pop(chat_id, None)  # Clear user data after cancellation
 
-# Function to post to channel
 def post_to_channel(chat_id):
-    bot.send_photo(chat_id='-1002261291977', photo=user_data[chat_id]['photo'], caption=user_data[chat_id]['confirm_message'])
-    bot.send_message(chat_id, "Signal posted to channel successfully!")
+    channel_id = os.getenv('TELEGRAM_CHANNEL_ID')
+    if not channel_id:
+        raise ValueError("Error: No TELEGRAM_CHANNEL_ID found. Set it as an environment variable.")
+
+    # Post the signal to the specified channel
+    bot.send_photo(channel_id, user_data[chat_id]['photo'], caption=user_data[chat_id]['confirm_message'])
+    bot.send_message(chat_id, "Signal successfully posted.")
     user_data.pop(chat_id, None)  # Clear user data after posting
 
-# Start the bot and indicate it is running successfully
-if __name__ == "__main__":
-    print("Bot is running successfully!")
+# Main polling loop with error handling
+try:
     bot.polling(none_stop=True)
+except Exception as e:
+    logging.error(f"An error occurred: {str(e)}")
+    time.sleep(15)  # Wait before retrying to avoid spamming the API
